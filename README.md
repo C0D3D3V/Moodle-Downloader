@@ -27,4 +27,4 @@ All the files are stored in their respective directories inside the `root_dir` w
 
 This code is the modified version of the downloader created by Vinay Chandra
 
-Dieses Werk ist lizenziert unter einer Creative Commons Namensnennung - Weitergabe unter gleichen Bedingungen 4.0 International Lizenz. 
+This work is licensed under a Creative Commons Attribution 4.0 International License.
