@@ -23,6 +23,7 @@ All the files are stored in their respective directories inside the `root_dir` w
 
 ### EXTRAS
 
-- Put `watch -n 3600 python moodle.py` in startup to fetch the files every hour.
+- Put `watch -n 3600 python moodleRUHR.py` in startup to fetch the files every hour.
 
-This code is the modified version of the downloader created by Dheeraj Reddy Kalmekolan
+This code is the modified version of the downloader created by Vinay Chandra
+Dieses Werk ist lizenziert unter einer Creative Commons Namensnennung - Weitergabe unter gleichen Bedingungen 4.0 International Lizenz. 
