@@ -1,6 +1,6 @@
 # Automatic Moodle Downloader
 
-The `moodle.py` script downloads all the files posted in the course page of all the courses in your moodle page.
+The `moodleRUHR.py` script downloads all the files posted in the course page of all the courses in your moodle page.
 Dublicated Files get deleted.
 Links in the history file get not crawlen.
 
