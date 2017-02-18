@@ -637,7 +637,7 @@ for course in courses:
                 ii += 1
               
                  
-            print(datetime.now().strftime('%H:%M:%S') + "  Creating file: ", file_name)
+            print(datetime.now().strftime('%H:%M:%S') + "  Creating file: '" +  file_name + "'")
             pdfFile = open(file_name, 'wb')
             pdfFile.write(webFileTrapContent)
             webFileTrap.close()
@@ -687,7 +687,7 @@ for course in courses:
                ii += 1
                   
                 
-           print(datetime.now().strftime('%H:%M:%S') + "  Creating file: ", file_name)
+           print(datetime.now().strftime('%H:%M:%S') + "  Creating file: '" + file_name + "'")
            pdfFile = open(file_name, 'wb')
            pdfFile.write(webFileContent)
            webFileCourseFile.close()
