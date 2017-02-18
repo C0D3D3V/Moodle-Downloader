@@ -1,6 +1,6 @@
 #!/usr/bin/env python2
 
-#Copyright 2017 Daniel Vogt
+#  Copyright 2017 Daniel Vogt
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -69,7 +69,7 @@ crawlforum = conf.get("crawl", "forum") #/forum/
 usehistory = conf.get("crawl", "history") #do not recrawl
 
 authentication_url = conf.get("auth", "url").strip('\'"')
-
+ 
 
 cj = cookielib.CookieJar()
 opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
@@ -248,8 +248,8 @@ for course in courses:
              continue
     
           CourseLinkContent = responseCourseLink.read()
-        else:
-           print(datetime.now().strftime('%H:%M:%S') + " Crawler is still loged in.")           
+       else:
+          print(datetime.now().strftime('%H:%M:%S') + " Crawler is still loged in.")           
 
  
 
