@@ -1,9 +1,9 @@
 # Automatic Moodle Downloader
 
 The `moodleCrawler.py` script downloads all the files posted in the course page of all the courses in your moodle page.
-Dublicated Files get deleted.
-Links in the history file get not 
-.
+Dublicated Files in the `root_dir` get deleted. Links in the history file get not downloaded.
+
+You can change names of downloaded Files and Places them to a different location, they will not be downloaded again (only if you delete the history files).
 
 Set the following in the file `config.ini` before running the script
 
