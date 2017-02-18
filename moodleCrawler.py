@@ -93,7 +93,7 @@ print(datetime.now().strftime('%H:%M:%S') + "  Try to login...")
 req = urllib2.Request(authentication_url, data)
 #response = urllib2.urlopen(req)
 try:
-   responseLogin = urllib2.urlopen(req)
+   responseLogin = urllib2.urlopen(req, timeout=10)
 except Exception:
    print(datetime.now().strftime('%H:%M:%S') + "Connection lost! It is not possible to connect to moodle!")
    exit(1)
@@ -136,7 +136,7 @@ print(datetime.now().strftime('%H:%M:%S') + "  Searching Courses...")
 
 #Lookup in the Moodle source if it is standard (moodlePath/my/ are my courses)
 try:
-   responseCourses = urllib2.urlopen(mainpageURL + "my/")
+   responseCourses = urllib2.urlopen(mainpageURL + "my/", timeout=10)
 except Exception:
    print(datetime.now().strftime('%H:%M:%S') + " Connection lost! It is not possible to connect to moodle!")
    exit(1)
@@ -181,7 +181,7 @@ for course_string in course_list:
 for course in courses:
     if not os.path.isdir(root_directory + course[0]):
         os.mkdir(root_directory+course[0])
-    #response1 = urllib2.urlopen(course[1])
+    #response1 = urllib2.urlopen(course[1], timeout=10)
     logFileWriter = open(root_directory + course[0] + "/crawlhistory.log", 'ab')
     logFileWriter.close()
     logFileReader = open(root_directory + course[0] + "/crawlhistory.log", 'rb')
@@ -200,7 +200,7 @@ for course in courses:
     print(datetime.now().strftime('%H:%M:%S') + "  Check Course: '" + course[0] + "'")
 
     try:
-       responseCourseLink = urllib2.urlopen(course[1])
+       responseCourseLink = urllib2.urlopen(course[1], timeout=10)
     except Exception:
        print(datetime.now().strftime('%H:%M:%S') + " Connection lost! Course does not exist!")
        continue
@@ -223,7 +223,7 @@ for course in courses:
              print(datetime.now().strftime('%H:%M:%S') + " Try to relogin, connection maybe lost.")
              
              try:
-                responseLogin = urllib2.urlopen(req)
+                responseLogin = urllib2.urlopen(req, timeout=10)
              except Exception:
                 print(datetime.now().strftime('%H:%M:%S') + " Connection lost! It is not possible to connect to moodle!")
                 continue
@@ -245,7 +245,7 @@ for course in courses:
              #reload page  
              print(datetime.now().strftime('%H:%M:%S') + " Recheck Course: '" + course[0] + "'")
              try:
-                responseCourseLink = urllib2.urlopen(course[1])
+                responseCourseLink = urllib2.urlopen(course[1], timeout=10)
              except Exception:
                 print(datetime.now().strftime('%H:%M:%S') + " Connection lost! Course does not exist!")
                 continue
@@ -290,7 +290,7 @@ for course in courses:
         #opener1.addheaders = [('User-agent', 'HeyThanksForWatchingThisAgenet')]
         #urllib2.install_opener(opener1)
         #req1 = urllib2.Request(authentication_url, data)
-        #resp = urllib2.urlopen(req1)
+        #resp = urllib2.urlopen(req1, timeout=10)
  
 
         isexternlink = False
@@ -308,9 +308,9 @@ for course in courses:
            print(datetime.now().strftime('%H:%M:%S') + " Ups this is a forum. I do not crawl this forum. Change the settings if you want to crawl forums.")
            continue
 
-        #webFileCourseFile = urllib2.urlopen(hrefCourseFile)
+        #webFileCourseFile = urllib2.urlopen(hrefCourseFile, timeout=10)
         try:
-           webFileCourseFile = urllib2.urlopen(hrefCourseFile)
+           webFileCourseFile = urllib2.urlopen(hrefCourseFile, timeout=10)
         except Exception:
            print(datetime.now().strftime('%H:%M:%S') + " Connection lost! Link does not exist!")
            continue
@@ -355,13 +355,11 @@ for course in courses:
 
         
         if "text/html" in webFileCourseFile.info().getheader('Content-Type'):
-
-           print(datetime.now().strftime('%H:%M:%S') + " Debug -2")  
+ 
            webFileSoup = BeautifulSoup(webFileContent, "lxml") 
    
            if not isexternlink:
-              LoginStatusConntent = webFileSoup.find(class_="logininfo")
-              print(datetime.now().strftime('%H:%M:%S') + " Debug -1")  
+              LoginStatusConntent = webFileSoup.find(class_="logininfo") 
    
               if not LoginStatusConntent is None:
                  print(datetime.now().strftime('%H:%M:%S') + " Checking login status.")  
@@ -372,7 +370,7 @@ for course in courses:
                     print(datetime.now().strftime('%H:%M:%S') + " Try to relogin, connection maybe lost.")
                     
                     try:
-                       responseLogin = urllib2.urlopen(req)
+                       responseLogin = urllib2.urlopen(req, timeout=10)
                     except Exception:
                        print(datetime.now().strftime('%H:%M:%S') + " Connection lost! It is not possible to connect to moodle!")
                        continue
@@ -393,7 +391,7 @@ for course in courses:
                       
                     #reload page
                     try:
-                       webFileCourseFile = urllib2.urlopen(hrefCourseFile)
+                       webFileCourseFile = urllib2.urlopen(hrefCourseFile, timeout=10)
                     except Exception:
                        print(datetime.now().strftime('%H:%M:%S') + " Connection lost! Link does not exist!")
                        continue
@@ -491,7 +489,7 @@ for course in courses:
                isexternLinkT = True
 
             try:
-               webFileTrap = urllib2.urlopen(hrefT)
+               webFileTrap = urllib2.urlopen(hrefT, timeout=10)
             except Exception:
                print(datetime.now().strftime('%H:%M:%S') + " Connection lost! File does not exist!")
                continue
@@ -535,11 +533,9 @@ for course in courses:
 
    
 
-            if not isexternLinkT and "text/html" in webFileTrap.info().getheader('Content-Type'):  
-               print(datetime.now().strftime('%H:%M:%S') + " Debug -2")  
+            if not isexternLinkT and "text/html" in webFileTrap.info().getheader('Content-Type'):
                TrapSoup = BeautifulSoup(webFileTrapContent, "lxml") 
-               LoginStatusConntent = TrapSoup.find(class_="logininfo")
-               print(datetime.now().strftime('%H:%M:%S') + " Debug -1")  
+               LoginStatusConntent = TrapSoup.find(class_="logininfo")   
                if not LoginStatusConntent is None:
                   print(datetime.now().strftime('%H:%M:%S') + " Checking login status.")  
                   #Lookup in the Moodle source if it is standard (login / log in on every page)
@@ -548,7 +544,7 @@ for course in courses:
                      print(datetime.now().strftime('%H:%M:%S') + " Try to relogin, connection maybe lost.")
                      
                      try:
-                        responseLogin = urllib2.urlopen(req)
+                        responseLogin = urllib2.urlopen(req, timeout=10)
                      except Exception:
                         print(datetime.now().strftime('%H:%M:%S') + " Connection lost! It is not possible to connect to moodle!")
                         continue
@@ -569,7 +565,7 @@ for course in courses:
                        
                      #reload page
                      try:
-                        webFileTrap = urllib2.urlopen(hrefT)
+                        webFileTrap = urllib2.urlopen(hrefT, timeout=10)
                      except Exception:
                         print(datetime.now().strftime('%H:%M:%S') + " Connection lost! File does not exist!")
                         continue
@@ -613,31 +609,22 @@ for course in courses:
 
 
 
- 
-            print(datetime.now().strftime('%H:%M:%S') + " Debug 0")  
+  
             webfileTrapurl = webFileTrap.geturl().split('/')[-1].split('?')[0].encode('ascii', 'ignore').replace('/', '|').replace('\\', '|').replace(' ', '_')
-
  
-            print(datetime.now().strftime('%H:%M:%S') + " Debug 1")  
             if webfileTrapurl == "":
                webfileTrapurl = "index.html"
-                  
- 
-            print(datetime.now().strftime('%H:%M:%S') + " Debug 2")  
+                   
             url = sub_dir + webfileTrapurl
             file_name = url 
             if file_name[-4:] == ".php":
                file_name = file_name[:len(file_name) - 4] + ".html"
-
  
-            print(datetime.now().strftime('%H:%M:%S') + " Debug 3")  
             if file_name.split('.')[-1] == file_name:
                file_name = file_name + ".html"
 
             #file_name = urllib.unquote(url).decode('utf8')
-               
- 
-            print(datetime.now().strftime('%H:%M:%S') + " Debug 4")  
+                
             old_name = ""
             if os.path.isfile(file_name):
                old_name = file_name
@@ -676,22 +663,17 @@ for course in courses:
 
            if webfileurlCourseFile == "":
               webfileurlCourseFile = "index.html"
-
-           print(datetime.now().strftime('%H:%M:%S') + " Debuga 1")
+ 
            url = current_dir + webfileurlCourseFile
            #file_name = urllib.unquote(url).decode('utf8')
-
-           print(datetime.now().strftime('%H:%M:%S') + " Debuga 2")
+ 
            file_name = url
            if file_name[-4:] == ".php":
               file_name = file_name[:len(file_name) - 4] + ".html"
-                 
-           print(datetime.now().strftime('%H:%M:%S') + " Debuga 3")
-
+                  
            if file_name.split('.')[-1] == file_name:
               file_name = file_name + ".html"
-
-           print(datetime.now().strftime('%H:%M:%S') + " Debuga 4")
+ 
 
            old_name = ""
            if os.path.isfile(file_name):
@@ -707,9 +689,7 @@ for course in courses:
                   file_name = new_name
                   break
                ii += 1
-                  
-           print(datetime.now().strftime('%H:%M:%S') + " Debuga 5")
-                
+                   
            print(datetime.now().strftime('%H:%M:%S') + "  Creating file: '" + file_name + "'")
            pdfFile = open(file_name, 'wb')
            pdfFile.write(webFileContent)
