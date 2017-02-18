@@ -1,6 +1,6 @@
 # Automatic Moodle Downloader
 
-The `moodleRUHR.py` script downloads all the files posted in the course page of all the courses in your moodle page.
+The `moodleCrawler.py` script downloads all the files posted in the course page of all the courses in your moodle page.
 Dublicated Files get deleted.
 Links in the history file get not 
 .
@@ -24,7 +24,7 @@ All the files are stored in their respective directories inside the `root_dir` w
 
 ### EXTRAS
 
-- Put `watch -n 3600 python moodleRUHR.py` in startup to fetch the files every hour.
+- Put `watch -n 3600 python moodleCrawler.py` in startup to fetch the files every hour.
 
 This code is the modified version of the downloader created by Vinay Chandra
 
