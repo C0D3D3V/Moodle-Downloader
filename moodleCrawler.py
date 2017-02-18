@@ -319,7 +319,40 @@ for course in courses:
         
 
         print(datetime.now().strftime('%H:%M:%S') + " Download has started.")
-        webFileContent = webFileCourseFile.read()
+
+        webFileContent = ""
+
+        try:
+            total_size = webFileCourseFile.info().getheader('Content-Length').strip()
+            header = True
+        except Exception:
+            print(datetime.now().strftime('%H:%M:%S') + " No Content-Length available.")
+            header = False # a response doesn't always include the "Content-Length" header
+
+        if header:
+            total_size = int(total_size)
+ 
+        bytes_so_far = 0
+ 
+        while True:
+            webFileContentBuffer = webFileCourseFile.read(8192)
+            if not webFileContentBuffer: 
+                break
+        
+            bytes_so_far += len(webFileContentBuffer) 
+            webFileContent = webFileContent + webFileContentBuffer
+
+            if not header: 
+               print(datetime.now().strftime('%H:%M:%S') + " Downloaded %d bytes" % (bytes_so_far))
+ 
+            else:
+               percent = float(bytes_so_far) / total_size
+               percent = round(percent*100, 2)
+               print(datetime.now().strftime('%H:%M:%S') + " Downloaded %d of %d bytes (%0.2f%%)\r" % (bytes_so_far, total_size, percent))
+ 
+
+
+
 
 
         webFileSoup = BeautifulSoup(webFileContent, "lxml") 
@@ -327,6 +360,7 @@ for course in courses:
         if not isexternlink:
            LoginStatusConntent = webFileSoup.find(class_="logininfo")
            if not LoginStatusConntent is None:
+              print(datetime.now().strftime('%H:%M:%S') + " Checking login status.")  
            
               #Lookup in the Moodle source if it is standard (login / log in on every page)
               #Is a relogin needed ? Try to figure out when relogin is needed.
@@ -363,7 +397,40 @@ for course in courses:
                  
                    
                  print(datetime.now().strftime('%H:%M:%S') + " Download has restarted.")
-                 webFileContent = webFileCourseFile.read()
+                 #webFileContent = webFileCourseFile.read()
+                 webFileContent = ""
+
+                 try:
+                     total_size = webFileCourseFile.info().getheader('Content-Length').strip()
+                     header = True
+                 except Exception:
+                     print(datetime.now().strftime('%H:%M:%S') + " No Content-Length available.")
+                     header = False # a response doesn't always include the "Content-Length" header
+         
+                 if header:
+                     total_size = int(total_size)
+          
+                 bytes_so_far = 0
+          
+                 while True:
+                     webFileContentBuffer = webFileCourseFile.read(8192)
+                     if not webFileContentBuffer: 
+                         break
+                 
+                     bytes_so_far += len(webFileContentBuffer) 
+                     webFileContent = webFileContent + webFileContentBuffer
+         
+                     if not header: 
+                        print(datetime.now().strftime('%H:%M:%S') + " Downloaded %d bytes" % (bytes_so_far))
+          
+                     else:
+                        percent = float(bytes_so_far) / total_size
+                        percent = round(percent*100, 2)
+                        print(datetime.now().strftime('%H:%M:%S') + " Downloaded %d of %d bytes (%0.2f%%)\r" % (bytes_so_far, total_size, percent))
+ 
+           else:
+              print(datetime.now().strftime('%H:%M:%S') + " Crawler is still loged in.")  
+
 
 
 
@@ -425,7 +492,40 @@ for course in courses:
                continue
 
             print(datetime.now().strftime('%H:%M:%S') + " Download has started.")
-            webFileTrapContent = webFileTrap.read()
+           # webFileTrapContent = webFileTrap.read()
+
+
+            webFileTrapContent = ""
+
+            try:
+                total_size = webFileTrap.info().getheader('Content-Length').strip()
+                header = True
+            except Exception:
+                print(datetime.now().strftime('%H:%M:%S') + " No Content-Length available.")
+                header = False # a response doesn't always include the "Content-Length" header
+    
+            if header:
+                total_size = int(total_size)
+     
+            bytes_so_far = 0
+     
+            while True:
+                webFileTrapBuffer = webFileTrap.read(8192)
+                if not webFileTrapBuffer: 
+                    break
+            
+                bytes_so_far += len(webFileTrapBuffer) 
+                webFileTrapContent = webFileTrapContent + webFileTrapBuffer
+    
+                if not header: 
+                   print(datetime.now().strftime('%H:%M:%S') + " Downloaded %d bytes" % (bytes_so_far))
+     
+                else:
+                   percent = float(bytes_so_far) / total_size
+                   percent = round(percent*100, 2)
+                   print(datetime.now().strftime('%H:%M:%S') + " Downloaded %d of %d bytes (%0.2f%%)\r" % (bytes_so_far, total_size, percent))
+ 
+
 
   
  
@@ -468,7 +568,38 @@ for course in courses:
                         continue
     
                      print(datetime.now().strftime('%H:%M:%S') + " Download has restarted.")
-                     webFileTrapContent = webFileTrap.read()
+                     #webFileTrapContent = webFileTrap.read()
+                     webFileTrapContent = ""
+         
+                     try:
+                         total_size = webFileTrap.info().getheader('Content-Length').strip()
+                         header = True
+                     except Exception:
+                         print(datetime.now().strftime('%H:%M:%S') + " No Content-Length available.")
+                         header = False # a response doesn't always include the "Content-Length" header
+             
+                     if header:
+                         total_size = int(total_size)
+              
+                     bytes_so_far = 0
+              
+                     while True:
+                         webFileTrapBuffer = webFileTrap.read(8192)
+                         if not webFileTrapBuffer: 
+                             break
+                     
+                         bytes_so_far += len(webFileTrapBuffer) 
+                         webFileTrapContent = webFileTrapContent + webFileTrapBuffer
+             
+                         if not header: 
+                            print(datetime.now().strftime('%H:%M:%S') + " Downloaded %d bytes" % (bytes_so_far))
+              
+                         else:
+                            percent = float(bytes_so_far) / total_size
+                            percent = round(percent*100, 2)
+                            print(datetime.now().strftime('%H:%M:%S') + " Downloaded %d of %d bytes (%0.2f%%)\r" % (bytes_so_far, total_size, percent))
+           
+
                   else:
                      print(datetime.now().strftime('%H:%M:%S') + " Crawler is still loged in.")  
 
