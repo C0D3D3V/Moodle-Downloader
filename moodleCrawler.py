@@ -62,6 +62,7 @@ conf = ConfigParser()
 project_dir = os.path.dirname(os.path.abspath(__file__))
 conf.read(os.path.join(project_dir, 'config.ini'))
 
+#ToDo: use quotation marks to read in settings    | check if a slash is at the end of the path
 root_directory = conf.get("dirs", "root_dir")
 username = conf.get("auth", "username")
 password = conf.get("auth", "password")
@@ -69,8 +70,8 @@ crawlforum = conf.get("crawl", "forum") #/forum/
 usehistory = conf.get("crawl", "history") #do not recrawl
 
 authentication_url = conf.get("auth", "url").strip('\'"')
- 
 
+  
 cj = cookielib.CookieJar()
 opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
 opener.addheaders = [('User-agent', 'HeyThanksForWatchingThisAgenet')]
@@ -153,6 +154,10 @@ CoursesContentsList = CoursesContentsSoup.find(id="region-main")
 #CoursesContentsList = CoursesContents.split('class="block_course_list  block list_block"')[1].split('class="footer"')[0]
 #>Meine Kurse</h2>
  
+if CoursesContentsList is None:
+   print(datetime.now().strftime('%H:%M:%S') + "  Unable to find Courses")
+   exit(1)
+   
  
 regexCourseName = re.compile('class="course_title">(.*?)</div>')
 course_list = regexCourseName.findall(str(CoursesContentsList))
@@ -383,10 +388,10 @@ for course in courses:
 
           for traplink in trap_links:
             hrefT = traplink.get('href')
-              
-            if hrefT == None:
-               print(datetime.now().strftime('%H:%M:%S') + " Somthing bad happend!")
-               continue
+               
+            if hrefT is None or hrefT == "":
+                 print(datetime.now().strftime('%H:%M:%S') + " There went something wrong, this is an empty link.")
+                 continue
 
             # Checking only resources... Ignoring forum and folders, etc
             #if "/pluginfile.php/" in hrefT or "/resource/" in hrefT:
