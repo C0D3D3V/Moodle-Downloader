@@ -112,10 +112,8 @@ if LoginStatusConntent is None or ("Logout" not in str(LoginStatusConntent) and 
 
 
 print(datetime.now().strftime('%H:%M:%S') + "  Logged in!")
-
-
-
-
+ 
+ 
 
 #Lookup in the Moodle source if it is standard (Domain + subfolder)
 mainpageURL = responseLogin.geturl()
@@ -212,49 +210,49 @@ for course in courses:
  
          
 
- 
-    CourseSoup = BeautifulSoup(CourseLinkContent, "lxml") 
-    LoginStatusConntent = CourseSoup.find(class_="logininfo")
-    if not LoginStatusConntent is None:
-    
-       print(datetime.now().strftime('%H:%M:%S') + " Checking login status.")  
-       #Lookup in the Moodle source if it is standard (login / log in on every page)
-       #Is a relogin needed ? Try to figure out when relogin is needed.
-       if "Logout" not in str(LoginStatusConntent) and "logout" not in str(LoginStatusConntent):
-          print(datetime.now().strftime('%H:%M:%S') + " Try to relogin, connection maybe lost.")
-          
-          try:
-             responseLogin = urllib2.urlopen(req)
-          except Exception:
-             print(datetime.now().strftime('%H:%M:%S') + " Connection lost! It is not possible to connect to moodle!")
-             continue
-           
-          LoginContents = responseLogin.read()
-           
-           
-          if "errorcode=" in responseLogin.geturl():
-              print(datetime.now().strftime('%H:%M:%S') + "   Cannot login. Check your login data.")
-              continue
-          
-          #Lookup in the Moodle source if it is standard   ("Logout" on every Page)
-          LoginSoup = BeautifulSoup(LoginContents, "lxml") 
-          LoginStatusConntent = LoginSoup.find(class_="logininfo")
-          if LoginStatusConntent is None or ("Logout" not in str(LoginStatusConntent) and "logout" not in str(LoginStatusConntent)):  
-              print(datetime.now().strftime('%H:%M:%S') + "   Cannot connect to moodle or Moodle has changed. Crawler is not logged in. Check your login data.")#
-              print("Debug: " + LoginContents)
-              continue
-            
-          #reload page  
-          print(datetime.now().strftime('%H:%M:%S') + " Recheck Course: '" + course[0] + "'")
-          try:
-             responseCourseLink = urllib2.urlopen(course[1])
-          except Exception:
-             print(datetime.now().strftime('%H:%M:%S') + " Connection lost! Course does not exist!")
-             continue
-    
-          CourseLinkContent = responseCourseLink.read()
-       else:
-          print(datetime.now().strftime('%H:%M:%S') + " Crawler is still loged in.")           
+    if "text/html" in responseCourseLink.info().getheader('Content-Type'):
+
+       CourseSoup = BeautifulSoup(CourseLinkContent, "lxml") 
+       LoginStatusConntent = CourseSoup.find(class_="logininfo")
+       if not LoginStatusConntent is None:
+       
+          print(datetime.now().strftime('%H:%M:%S') + " Checking login status.")  
+          #Lookup in the Moodle source if it is standard (login / log in on every page)
+          #Is a relogin needed ? Try to figure out when relogin is needed.
+          if "Logout" not in str(LoginStatusConntent) and "logout" not in str(LoginStatusConntent):
+             print(datetime.now().strftime('%H:%M:%S') + " Try to relogin, connection maybe lost.")
+             
+             try:
+                responseLogin = urllib2.urlopen(req)
+             except Exception:
+                print(datetime.now().strftime('%H:%M:%S') + " Connection lost! It is not possible to connect to moodle!")
+                continue
+              
+             LoginContents = responseLogin.read()
+              
+              
+             if "errorcode=" in responseLogin.geturl():
+                 print(datetime.now().strftime('%H:%M:%S') + "   Cannot login. Check your login data.")
+                 continue
+             
+             #Lookup in the Moodle source if it is standard   ("Logout" on every Page)
+             LoginSoup = BeautifulSoup(LoginContents, "lxml") 
+             LoginStatusConntent = LoginSoup.find(class_="logininfo")
+             if LoginStatusConntent is None or ("Logout" not in str(LoginStatusConntent) and "logout" not in str(LoginStatusConntent)):  
+                 print(datetime.now().strftime('%H:%M:%S') + "   Cannot connect to moodle or Moodle has changed. Crawler is not logged in. Check your login data.")
+                 continue
+               
+             #reload page  
+             print(datetime.now().strftime('%H:%M:%S') + " Recheck Course: '" + course[0] + "'")
+             try:
+                responseCourseLink = urllib2.urlopen(course[1])
+             except Exception:
+                print(datetime.now().strftime('%H:%M:%S') + " Connection lost! Course does not exist!")
+                continue
+       
+             CourseLinkContent = responseCourseLink.read()
+          else:
+             print(datetime.now().strftime('%H:%M:%S') + " Crawler is still loged in.")           
 
  
 
@@ -355,87 +353,88 @@ for course in courses:
 
 
 
+        
+        if "text/html" in webFileCourseFile.info().getheader('Content-Type'):
 
-        print(datetime.now().strftime('%H:%M:%S') + " Debug -2")  
-        webFileSoup = BeautifulSoup(webFileContent, "lxml") 
-
-        if not isexternlink:
-           LoginStatusConntent = webFileSoup.find(class_="logininfo")
-           print(datetime.now().strftime('%H:%M:%S') + " Debug -1")  
-           
-           if not LoginStatusConntent is None:
-              print(datetime.now().strftime('%H:%M:%S') + " Checking login status.")  
-           
-              #Lookup in the Moodle source if it is standard (login / log in on every page)
-              #Is a relogin needed ? Try to figure out when relogin is needed.
-              if "Logout" not in str(LoginStatusConntent) and "logout" not in str(LoginStatusConntent):
-                 print(datetime.now().strftime('%H:%M:%S') + " Try to relogin, connection maybe lost.")
-                 
-                 try:
-                    responseLogin = urllib2.urlopen(req)
-                 except Exception:
-                    print(datetime.now().strftime('%H:%M:%S') + " Connection lost! It is not possible to connect to moodle!")
-                    continue
-                  
-                 LoginContents = responseLogin.read()
-                  
-                  
-                 if "errorcode=" in responseLogin.geturl():
-                     print(datetime.now().strftime('%H:%M:%S') + "   Cannot login. Check your login data.")
-                     continue
-                 
-                 #Lookup in the Moodle source if it is standard   ("Logout" on every Page)
-                 LoginSoup = BeautifulSoup(LoginContents, "lxml") 
-                 LoginStatusConntent = LoginSoup.find(class_="logininfo")
-                 if LoginStatusConntent is None or ("Logout" not in str(LoginStatusConntent) and "logout" not in str(LoginStatusConntent)):  
-                     print(datetime.now().strftime('%H:%M:%S') + "   Cannot connect to moodle or Moodle has changed. Crawler is not logged in. Check your login data.")#
-                     print("Debug: " + LoginContents)
-                     continue
-                   
-                 #reload page
-                 try:
-                    webFileCourseFile = urllib2.urlopen(hrefCourseFile)
-                 except Exception:
-                    print(datetime.now().strftime('%H:%M:%S') + " Connection lost! Link does not exist!")
-                    continue
-                 
-                   
-                 print(datetime.now().strftime('%H:%M:%S') + " Download has restarted.")
-                 #webFileContent = webFileCourseFile.read()
-                 webFileContent = ""
-
-                 try:
-                     total_size = webFileCourseFile.info().getheader('Content-Length').strip()
-                     header = True
-                 except Exception:
-                     print(datetime.now().strftime('%H:%M:%S') + " No Content-Length available.")
-                     header = False # a response doesn't always include the "Content-Length" header
-         
-                 if header:
-                     total_size = int(total_size)
-          
-                 bytes_so_far = 0
-          
-                 while True:
-                     webFileContentBuffer = webFileCourseFile.read(8192)
-                     if not webFileContentBuffer: 
-                         break
-                 
-                     bytes_so_far += len(webFileContentBuffer) 
-                     webFileContent = webFileContent + webFileContentBuffer
-         
-                     if not header: 
-                        print(datetime.now().strftime('%H:%M:%S') + " Downloaded %d bytes" % (bytes_so_far))
-          
-                     else:
-                        percent = float(bytes_so_far) / total_size
-                        percent = round(percent*100, 2)
-                        print(datetime.now().strftime('%H:%M:%S') + " Downloaded %d of %d bytes (%0.2f%%)\r" % (bytes_so_far, total_size, percent))
- 
-
-                 print(datetime.now().strftime('%H:%M:%S') + " Download complete.")  
-              else:
-                 print(datetime.now().strftime('%H:%M:%S') + " Crawler is still loged in.")  
+           print(datetime.now().strftime('%H:%M:%S') + " Debug -2")  
+           webFileSoup = BeautifulSoup(webFileContent, "lxml") 
+   
+           if not isexternlink:
+              LoginStatusConntent = webFileSoup.find(class_="logininfo")
+              print(datetime.now().strftime('%H:%M:%S') + " Debug -1")  
+   
+              if not LoginStatusConntent is None:
+                 print(datetime.now().strftime('%H:%M:%S') + " Checking login status.")  
+              
+                 #Lookup in the Moodle source if it is standard (login / log in on every page)
+                 #Is a relogin needed ? Try to figure out when relogin is needed.
+                 if "Logout" not in str(LoginStatusConntent) and "logout" not in str(LoginStatusConntent):
+                    print(datetime.now().strftime('%H:%M:%S') + " Try to relogin, connection maybe lost.")
+                    
+                    try:
+                       responseLogin = urllib2.urlopen(req)
+                    except Exception:
+                       print(datetime.now().strftime('%H:%M:%S') + " Connection lost! It is not possible to connect to moodle!")
+                       continue
+                     
+                    LoginContents = responseLogin.read()
+                     
+                     
+                    if "errorcode=" in responseLogin.geturl():
+                        print(datetime.now().strftime('%H:%M:%S') + "   Cannot login. Check your login data.")
+                        continue
+                    
+                    #Lookup in the Moodle source if it is standard   ("Logout" on every Page)
+                    LoginSoup = BeautifulSoup(LoginContents, "lxml") 
+                    LoginStatusConntent = LoginSoup.find(class_="logininfo")
+                    if LoginStatusConntent is None or ("Logout" not in str(LoginStatusConntent) and "logout" not in str(LoginStatusConntent)):  
+                        print(datetime.now().strftime('%H:%M:%S') + "   Cannot connect to moodle or Moodle has changed. Crawler is not logged in. Check your login data.")
+                        continue
+                      
+                    #reload page
+                    try:
+                       webFileCourseFile = urllib2.urlopen(hrefCourseFile)
+                    except Exception:
+                       print(datetime.now().strftime('%H:%M:%S') + " Connection lost! Link does not exist!")
+                       continue
+                    
+                      
+                    print(datetime.now().strftime('%H:%M:%S') + " Download has restarted.")
+                    #webFileContent = webFileCourseFile.read()
+                    webFileContent = ""
+   
+                    try:
+                        total_size = webFileCourseFile.info().getheader('Content-Length').strip()
+                        header = True
+                    except Exception:
+                        print(datetime.now().strftime('%H:%M:%S') + " No Content-Length available.")
+                        header = False # a response doesn't always include the "Content-Length" header
+            
+                    if header:
+                        total_size = int(total_size)
+             
+                    bytes_so_far = 0
+             
+                    while True:
+                        webFileContentBuffer = webFileCourseFile.read(8192)
+                        if not webFileContentBuffer: 
+                            break
+                    
+                        bytes_so_far += len(webFileContentBuffer) 
+                        webFileContent = webFileContent + webFileContentBuffer
+            
+                        if not header: 
+                           print(datetime.now().strftime('%H:%M:%S') + " Downloaded %d bytes" % (bytes_so_far))
+             
+                        else:
+                           percent = float(bytes_so_far) / total_size
+                           percent = round(percent*100, 2)
+                           print(datetime.now().strftime('%H:%M:%S') + " Downloaded %d of %d bytes (%0.2f%%)\r" % (bytes_so_far, total_size, percent))
+    
+   
+                    print(datetime.now().strftime('%H:%M:%S') + " Download complete.")  
+                 else:
+                    print(datetime.now().strftime('%H:%M:%S') + " Crawler is still loged in.")  
 
 
 
@@ -445,8 +444,8 @@ for course in courses:
 
         trapscount = 0
          
-         
-        if webfileurlCourseFile[-4:] == ".php" or webfileurlCourseFile[-4:] == ".html":
+        
+        if "text/html" in webFileCourseFile.info().getheader('Content-Type') or webfileurlCourseFile[-4:] == ".php" or webfileurlCourseFile[-4:] == ".html":
           print(datetime.now().strftime('%H:%M:%S') + "  It is a  folder! Try to find more links!")
           
           trap_links = webFileSoup.find(id="region-main").find_all('a')
@@ -534,9 +533,9 @@ for course in courses:
 
             print(datetime.now().strftime('%H:%M:%S') + " Download complete.")  
 
-  
- 
-            if not isexternLinkT: 
+   
+
+            if not isexternLinkT and "text/html" in webFileTrap.info().getheader('Content-Type'):  
                print(datetime.now().strftime('%H:%M:%S') + " Debug -2")  
                TrapSoup = BeautifulSoup(webFileTrapContent, "lxml") 
                LoginStatusConntent = TrapSoup.find(class_="logininfo")
@@ -565,8 +564,7 @@ for course in courses:
                      LoginSoup = BeautifulSoup(LoginContents, "lxml") 
                      LoginStatusConntent = LoginSoup.find(class_="logininfo")
                      if LoginStatusConntent is None or ("Logout" not in str(LoginStatusConntent)  and "logout" not in str(LoginStatusConntent) ):  
-                         print(datetime.now().strftime('%H:%M:%S') + "   Cannot connect to moodle or Moodle has changed. Crawler is not logged in. Check your login data.")#
-                         print("Debug: " + LoginContents)
+                         print(datetime.now().strftime('%H:%M:%S') + "   Cannot connect to moodle or Moodle has changed. Crawler is not logged in. Check your login data.")# 
                          continue
                        
                      #reload page
