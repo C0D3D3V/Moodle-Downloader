@@ -351,6 +351,7 @@ for course in courses:
                print(datetime.now().strftime('%H:%M:%S') + " Downloaded %d of %d bytes (%0.2f%%)\r" % (bytes_so_far, total_size, percent))
  
 
+        print(datetime.now().strftime('%H:%M:%S') + " Download complete.")  
 
 
 
@@ -428,8 +429,10 @@ for course in courses:
                         percent = round(percent*100, 2)
                         print(datetime.now().strftime('%H:%M:%S') + " Downloaded %d of %d bytes (%0.2f%%)\r" % (bytes_so_far, total_size, percent))
  
-           else:
-              print(datetime.now().strftime('%H:%M:%S') + " Crawler is still loged in.")  
+
+                 print(datetime.now().strftime('%H:%M:%S') + " Download complete.")  
+              else:
+                 print(datetime.now().strftime('%H:%M:%S') + " Crawler is still loged in.")  
 
 
 
@@ -526,6 +529,7 @@ for course in courses:
                    print(datetime.now().strftime('%H:%M:%S') + " Downloaded %d of %d bytes (%0.2f%%)\r" % (bytes_so_far, total_size, percent))
  
 
+            print(datetime.now().strftime('%H:%M:%S') + " Download complete.")  
 
   
  
@@ -600,28 +604,37 @@ for course in courses:
                             print(datetime.now().strftime('%H:%M:%S') + " Downloaded %d of %d bytes (%0.2f%%)\r" % (bytes_so_far, total_size, percent))
            
 
+                     print(datetime.now().strftime('%H:%M:%S') + " Download complete.")  
                   else:
                      print(datetime.now().strftime('%H:%M:%S') + " Crawler is still loged in.")  
 
 
 
  
-
+            print(datetime.now().strftime('%H:%M:%S') + " Debug 0")  
             webfileTrapurl = webFileTrap.geturl().split('/')[-1].split('?')[0].encode('ascii', 'ignore').replace('/', '|').replace('\\', '|').replace(' ', '_')
 
+ 
+            print(datetime.now().strftime('%H:%M:%S') + " Debug 1")  
             if webfileTrapurl == "":
                webfileTrapurl = "index.html"
                   
+ 
+            print(datetime.now().strftime('%H:%M:%S') + " Debug 2")  
             url = sub_dir + webfileTrapurl
             file_name = url 
             if file_name[-4:] == ".php":
                file_name = file_name[:len(file_name) - 4] + ".html"
 
+ 
+            print(datetime.now().strftime('%H:%M:%S') + " Debug 3")  
             if file_name.split('.')[-1] == file_name:
                file_name = file_name + ".html"
 
             #file_name = urllib.unquote(url).decode('utf8')
                
+ 
+            print(datetime.now().strftime('%H:%M:%S') + " Debug 4")  
             old_name = ""
             if os.path.isfile(file_name):
                old_name = file_name
@@ -636,7 +649,7 @@ for course in courses:
                    break
                 ii += 1
               
-                 
+  
             print(datetime.now().strftime('%H:%M:%S') + "  Creating file: '" +  file_name + "'")
             pdfFile = open(file_name, 'wb')
             pdfFile.write(webFileTrapContent)
