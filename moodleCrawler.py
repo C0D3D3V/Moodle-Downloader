@@ -281,7 +281,7 @@ for course in courses:
         
         print(datetime.now().strftime('%H:%M:%S') + "  Found Link: " + hrefCourseFile)
         if usehistory == "true" and hrefCourseFile in logFile:
-           print(datetime.now().strftime('%H:%M:%S') + " This link was crawled in the past. I will not recrawl it, change the setings if you want to recrawl it.")
+           print(datetime.now().strftime('%H:%M:%S') + " This link was crawled in the past. I will not recrawl it, change the settings if you want to recrawl it.")
            continue
 
         #print(datetime.now().strftime('%H:%M:%S') + "  found: " + hrefCourseFile + " in " + course[0])
@@ -446,213 +446,217 @@ for course in courses:
         if "text/html" in webFileCourseFile.info().getheader('Content-Type') or webfileurlCourseFile[-4:] == ".php" or webfileurlCourseFile[-4:] == ".html":
           print(datetime.now().strftime('%H:%M:%S') + "  It is a  folder! Try to find more links!")
           
-          trap_links = webFileSoup.find(id="region-main").find_all('a')
-               
-          myTitle = webFileSoup.title.string
-          
-          myTitle = myTitle.encode('ascii', 'ignore').replace('/', '|').replace('\\', '|').replace(' ', '_').replace('.', '_').replace(course[0] + ":_", '')
+          trap_links_region = webFileSoup.find(id="region-main")
 
-          sub_dir = root_directory + course[0] + "/" + myTitle + "/"
-          if not os.path.isdir(root_directory + course[0] + "/" + myTitle):
-             os.mkdir(root_directory + course[0] + "/" + myTitle)
-
-          for traplink in trap_links:
-            hrefT = traplink.get('href')
-               
-            if hrefT is None or hrefT == "":
-                 print(datetime.now().strftime('%H:%M:%S') + " There went something wrong, this is an empty link.")
-                 continue
-
-            # Checking only resources... Ignoring forum and folders, etc
-            #if "/pluginfile.php/" in hrefT or "/resource/" in hrefT:
-            if not hrefT.startswith("https://") and not hrefT.startswith("http://") and not hrefT.startswith("www."):
-               if hrefT.startswith('/'):
-                  hrefT = hrefCourseFile[:(len(hrefCourseFile) - len(hrefCourseFile.split('/')[-1])) - 1] + hrefT
-               else:
-                  hrefT = hrefCourseFile[:len(hrefCourseFile) - len(hrefCourseFile.split('/')[-1])] + hrefT
-            
-               
-
-            trapscount = trapscount + 1
-            print(datetime.now().strftime('%H:%M:%S') + "  Found link in folder: " + hrefT)
-            if usehistory == "true" and hrefT in logFile:
-              print(datetime.now().strftime('%H:%M:%S') + " This link was crawled in the past. I will not recrawl it, change the setings if you want to recrawl it.")
-              continue
-
-            isexternLinkT = False
-
-            if not domainMoodle in hrefT: 
-               print(datetime.now().strftime('%H:%M:%S') + " This is an external link. I will store it in the 'externel-links.log' file")
-               externalLinkWriter = open(sub_dir + "externel-links.log", 'ab')
-               externalLinkWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " "+ hrefT + "\n")
-               externalLinkWriter.close()
-               isexternLinkT = True
-
-            try:
-               webFileTrap = urllib2.urlopen(hrefT, timeout=10)
-            except Exception:
-               print(datetime.now().strftime('%H:%M:%S') + " Connection lost! File does not exist!")
-               continue
-
-            print(datetime.now().strftime('%H:%M:%S') + " Download has started.")
-           # webFileTrapContent = webFileTrap.read()
-
-
-            webFileTrapContent = ""
-
-            try:
-                total_size = webFileTrap.info().getheader('Content-Length').strip()
-                header = True
-            except Exception:
-                print(datetime.now().strftime('%H:%M:%S') + " No Content-Length available.")
-                header = False # a response doesn't always include the "Content-Length" header
+          if not trap_links_region is None:
     
-            if header:
-                total_size = int(total_size)
-     
-            bytes_so_far = 0
-     
-            while True:
-                webFileTrapBuffer = webFileTrap.read(8192)
-                if not webFileTrapBuffer: 
-                    break
-            
-                bytes_so_far += len(webFileTrapBuffer) 
-                webFileTrapContent = webFileTrapContent + webFileTrapBuffer
-    
-                if not header: 
-                   print(datetime.now().strftime('%H:%M:%S') + " Downloaded %d bytes" % (bytes_so_far))
-     
-                else:
-                   percent = float(bytes_so_far) / total_size
-                   percent = round(percent*100, 2)
-                   print(datetime.now().strftime('%H:%M:%S') + " Downloaded %d of %d bytes (%0.2f%%)\r" % (bytes_so_far, total_size, percent))
- 
-
-            print(datetime.now().strftime('%H:%M:%S') + " Download complete.")  
-
+             trap_links = trap_links_region.find_all('a')
+                  
+             myTitle = webFileSoup.title.string
+             
+             myTitle = myTitle.encode('ascii', 'ignore').replace('/', '|').replace('\\', '|').replace(' ', '_').replace('.', '_').replace(course[0] + ":_", '')
    
-
-            if not isexternLinkT and "text/html" in webFileTrap.info().getheader('Content-Type'):
-               TrapSoup = BeautifulSoup(webFileTrapContent, "lxml") 
-               LoginStatusConntent = TrapSoup.find(class_="logininfo")   
-               if not LoginStatusConntent is None:
-                  print(datetime.now().strftime('%H:%M:%S') + " Checking login status.")  
-                  #Lookup in the Moodle source if it is standard (login / log in on every page)
-                  #Is a relogin needed ? Try to figure out when relogin is needed.
-                  if "Logout" not in str(LoginStatusConntent) and "logout" not in str(LoginStatusConntent):
-                     print(datetime.now().strftime('%H:%M:%S') + " Try to relogin, connection maybe lost.")
-                     
-                     try:
-                        responseLogin = urllib2.urlopen(req, timeout=10)
-                     except Exception:
-                        print(datetime.now().strftime('%H:%M:%S') + " Connection lost! It is not possible to connect to moodle!")
-                        continue
-                      
-                     LoginContents = responseLogin.read()
-                      
-                      
-                     if "errorcode=" in responseLogin.geturl():
-                         print(datetime.now().strftime('%H:%M:%S') + "   Cannot login. Check your login data.")
-                         continue
-                     
-                     #Lookup in the Moodle source if it is standard   ("Logout" on every Page)
-                     LoginSoup = BeautifulSoup(LoginContents, "lxml") 
-                     LoginStatusConntent = LoginSoup.find(class_="logininfo")
-                     if LoginStatusConntent is None or ("Logout" not in str(LoginStatusConntent)  and "logout" not in str(LoginStatusConntent) ):  
-                         print(datetime.now().strftime('%H:%M:%S') + "   Cannot connect to moodle or Moodle has changed. Crawler is not logged in. Check your login data.")# 
-                         continue
-                       
-                     #reload page
-                     try:
-                        webFileTrap = urllib2.urlopen(hrefT, timeout=10)
-                     except Exception:
-                        print(datetime.now().strftime('%H:%M:%S') + " Connection lost! File does not exist!")
-                        continue
-    
-                     print(datetime.now().strftime('%H:%M:%S') + " Download has restarted.")
-                     #webFileTrapContent = webFileTrap.read()
-                     webFileTrapContent = ""
-         
-                     try:
-                         total_size = webFileTrap.info().getheader('Content-Length').strip()
-                         header = True
-                     except Exception:
-                         print(datetime.now().strftime('%H:%M:%S') + " No Content-Length available.")
-                         header = False # a response doesn't always include the "Content-Length" header
-             
-                     if header:
-                         total_size = int(total_size)
-              
-                     bytes_so_far = 0
-              
-                     while True:
-                         webFileTrapBuffer = webFileTrap.read(8192)
-                         if not webFileTrapBuffer: 
-                             break
-                     
-                         bytes_so_far += len(webFileTrapBuffer) 
-                         webFileTrapContent = webFileTrapContent + webFileTrapBuffer
-             
-                         if not header: 
-                            print(datetime.now().strftime('%H:%M:%S') + " Downloaded %d bytes" % (bytes_so_far))
-              
-                         else:
-                            percent = float(bytes_so_far) / total_size
-                            percent = round(percent*100, 2)
-                            print(datetime.now().strftime('%H:%M:%S') + " Downloaded %d of %d bytes (%0.2f%%)\r" % (bytes_so_far, total_size, percent))
-           
-
-                     print(datetime.now().strftime('%H:%M:%S') + " Download complete.")  
+             sub_dir = root_directory + course[0] + "/" + myTitle + "/"
+             if not os.path.isdir(root_directory + course[0] + "/" + myTitle):
+                os.mkdir(root_directory + course[0] + "/" + myTitle)
+   
+             for traplink in trap_links:
+               hrefT = traplink.get('href')
+                  
+               if hrefT is None or hrefT == "":
+                    print(datetime.now().strftime('%H:%M:%S') + " There went something wrong, this is an empty link.")
+                    continue
+   
+               # Checking only resources... Ignoring forum and folders, etc
+               #if "/pluginfile.php/" in hrefT or "/resource/" in hrefT:
+               if not hrefT.startswith("https://") and not hrefT.startswith("http://") and not hrefT.startswith("www."):
+                  if hrefT.startswith('/'):
+                     hrefT = hrefCourseFile[:(len(hrefCourseFile) - len(hrefCourseFile.split('/')[-1])) - 1] + hrefT
                   else:
-                     print(datetime.now().strftime('%H:%M:%S') + " Crawler is still loged in.")  
-
-
-
-  
-            webfileTrapurl = webFileTrap.geturl().split('/')[-1].split('?')[0].encode('ascii', 'ignore').replace('/', '|').replace('\\', '|').replace(' ', '_')
- 
-            if webfileTrapurl == "":
-               webfileTrapurl = "index.html"
-                   
-            url = sub_dir + webfileTrapurl
-            file_name = url 
-            if file_name[-4:] == ".php":
-               file_name = file_name[:len(file_name) - 4] + ".html"
- 
-            if file_name.split('.')[-1] == file_name:
-               file_name = file_name + ".html"
-
-            #file_name = urllib.unquote(url).decode('utf8')
-                
-            old_name = ""
-            if os.path.isfile(file_name):
-               old_name = file_name
-               fileend = file_name.split('.')[-1]
-               filebegin = file_name[:(len(file_name) - len(fileend)) - 1]
-                 
-               ii = 1
+                     hrefT = hrefCourseFile[:len(hrefCourseFile) - len(hrefCourseFile.split('/')[-1])] + hrefT
+               
+                  
+   
+               trapscount = trapscount + 1
+               print(datetime.now().strftime('%H:%M:%S') + "  Found link in folder: " + hrefT)
+               if usehistory == "true" and hrefT in logFile:
+                 print(datetime.now().strftime('%H:%M:%S') + " This link was crawled in the past. I will not recrawl it, change the settings if you want to recrawl it.")
+                 continue
+   
+               isexternLinkT = False
+   
+               if not domainMoodle in hrefT: 
+                  print(datetime.now().strftime('%H:%M:%S') + " This is an external link. I will store it in the 'externel-links.log' file")
+                  externalLinkWriter = open(sub_dir + "externel-links.log", 'ab')
+                  externalLinkWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " "+ hrefT + "\n")
+                  externalLinkWriter.close()
+                  isexternLinkT = True
+   
+               try:
+                  webFileTrap = urllib2.urlopen(hrefT, timeout=10)
+               except Exception:
+                  print(datetime.now().strftime('%H:%M:%S') + " Connection lost! File does not exist!")
+                  continue
+   
+               print(datetime.now().strftime('%H:%M:%S') + " Download has started.")
+              # webFileTrapContent = webFileTrap.read()
+   
+   
+               webFileTrapContent = ""
+   
+               try:
+                   total_size = webFileTrap.info().getheader('Content-Length').strip()
+                   header = True
+               except Exception:
+                   print(datetime.now().strftime('%H:%M:%S') + " No Content-Length available.")
+                   header = False # a response doesn't always include the "Content-Length" header
+       
+               if header:
+                   total_size = int(total_size)
+        
+               bytes_so_far = 0
+        
                while True:
-                new_name = filebegin + "_" + str(ii) + "." + fileend
-                if not os.path.isfile(new_name):
-                   file_name = new_name
-                   break
-                ii += 1
+                   webFileTrapBuffer = webFileTrap.read(8192)
+                   if not webFileTrapBuffer: 
+                       break
+               
+                   bytes_so_far += len(webFileTrapBuffer) 
+                   webFileTrapContent = webFileTrapContent + webFileTrapBuffer
+       
+                   if not header: 
+                      print(datetime.now().strftime('%H:%M:%S') + " Downloaded %d bytes" % (bytes_so_far))
+        
+                   else:
+                      percent = float(bytes_so_far) / total_size
+                      percent = round(percent*100, 2)
+                      print(datetime.now().strftime('%H:%M:%S') + " Downloaded %d of %d bytes (%0.2f%%)\r" % (bytes_so_far, total_size, percent))
+    
+   
+               print(datetime.now().strftime('%H:%M:%S') + " Download complete.")  
+   
+      
+   
+               if not isexternLinkT and "text/html" in webFileTrap.info().getheader('Content-Type'):
+                  TrapSoup = BeautifulSoup(webFileTrapContent, "lxml") 
+                  LoginStatusConntent = TrapSoup.find(class_="logininfo")   
+                  if not LoginStatusConntent is None:
+                     print(datetime.now().strftime('%H:%M:%S') + " Checking login status.")  
+                     #Lookup in the Moodle source if it is standard (login / log in on every page)
+                     #Is a relogin needed ? Try to figure out when relogin is needed.
+                     if "Logout" not in str(LoginStatusConntent) and "logout" not in str(LoginStatusConntent):
+                        print(datetime.now().strftime('%H:%M:%S') + " Try to relogin, connection maybe lost.")
+                        
+                        try:
+                           responseLogin = urllib2.urlopen(req, timeout=10)
+                        except Exception:
+                           print(datetime.now().strftime('%H:%M:%S') + " Connection lost! It is not possible to connect to moodle!")
+                           continue
+                         
+                        LoginContents = responseLogin.read()
+                         
+                         
+                        if "errorcode=" in responseLogin.geturl():
+                            print(datetime.now().strftime('%H:%M:%S') + "   Cannot login. Check your login data.")
+                            continue
+                        
+                        #Lookup in the Moodle source if it is standard   ("Logout" on every Page)
+                        LoginSoup = BeautifulSoup(LoginContents, "lxml") 
+                        LoginStatusConntent = LoginSoup.find(class_="logininfo")
+                        if LoginStatusConntent is None or ("Logout" not in str(LoginStatusConntent)  and "logout" not in str(LoginStatusConntent) ):  
+                            print(datetime.now().strftime('%H:%M:%S') + "   Cannot connect to moodle or Moodle has changed. Crawler is not logged in. Check your login data.")# 
+                            continue
+                          
+                        #reload page
+                        try:
+                           webFileTrap = urllib2.urlopen(hrefT, timeout=10)
+                        except Exception:
+                           print(datetime.now().strftime('%H:%M:%S') + " Connection lost! File does not exist!")
+                           continue
+       
+                        print(datetime.now().strftime('%H:%M:%S') + " Download has restarted.")
+                        #webFileTrapContent = webFileTrap.read()
+                        webFileTrapContent = ""
+            
+                        try:
+                            total_size = webFileTrap.info().getheader('Content-Length').strip()
+                            header = True
+                        except Exception:
+                            print(datetime.now().strftime('%H:%M:%S') + " No Content-Length available.")
+                            header = False # a response doesn't always include the "Content-Length" header
+                
+                        if header:
+                            total_size = int(total_size)
+                 
+                        bytes_so_far = 0
+                 
+                        while True:
+                            webFileTrapBuffer = webFileTrap.read(8192)
+                            if not webFileTrapBuffer: 
+                                break
+                        
+                            bytes_so_far += len(webFileTrapBuffer) 
+                            webFileTrapContent = webFileTrapContent + webFileTrapBuffer
+                
+                            if not header: 
+                               print(datetime.now().strftime('%H:%M:%S') + " Downloaded %d bytes" % (bytes_so_far))
+                 
+                            else:
+                               percent = float(bytes_so_far) / total_size
+                               percent = round(percent*100, 2)
+                               print(datetime.now().strftime('%H:%M:%S') + " Downloaded %d of %d bytes (%0.2f%%)\r" % (bytes_so_far, total_size, percent))
               
-  
-            print(datetime.now().strftime('%H:%M:%S') + "  Creating file: '" +  file_name + "'")
-            pdfFile = open(file_name, 'wb')
-            pdfFile.write(webFileTrapContent)
-            webFileTrap.close()
-            pdfFile.close()
-            logFileWriter = open(root_directory + course[0] + "/crawlhistory.log", 'ab')
-            logFileWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " "+ hrefT + " saved to '" + file_name + "'\n")
-            logFileWriter.close()
-            logFileReader = open(root_directory + course[0] + "/crawlhistory.log", 'rb')
-            logFile = logFileReader.read()
-            logFileReader.close()
+   
+                        print(datetime.now().strftime('%H:%M:%S') + " Download complete.")  
+                     else:
+                        print(datetime.now().strftime('%H:%M:%S') + " Crawler is still loged in.")  
+   
+   
+   
+     
+               webfileTrapurl = webFileTrap.geturl().split('/')[-1].split('?')[0].encode('ascii', 'ignore').replace('/', '|').replace('\\', '|').replace(' ', '_')
+    
+               if webfileTrapurl == "":
+                  webfileTrapurl = "index.html"
+                      
+               url = sub_dir + webfileTrapurl
+               file_name = url 
+               if file_name[-4:] == ".php":
+                  file_name = file_name[:len(file_name) - 4] + ".html"
+    
+               if file_name.split('.')[-1] == file_name:
+                  file_name = file_name + ".html"
+   
+               #file_name = urllib.unquote(url).decode('utf8')
+                   
+               old_name = ""
+               if os.path.isfile(file_name):
+                  old_name = file_name
+                  fileend = file_name.split('.')[-1]
+                  filebegin = file_name[:(len(file_name) - len(fileend)) - 1]
                     
-                     
+                  ii = 1
+                  while True:
+                   new_name = filebegin + "_" + str(ii) + "." + fileend
+                   if not os.path.isfile(new_name):
+                      file_name = new_name
+                      break
+                   ii += 1
+                 
+     
+               print(datetime.now().strftime('%H:%M:%S') + "  Creating file: '" +  file_name + "'")
+               pdfFile = open(file_name, 'wb')
+               pdfFile.write(webFileTrapContent)
+               webFileTrap.close()
+               pdfFile.close()
+               logFileWriter = open(root_directory + course[0] + "/crawlhistory.log", 'ab')
+               logFileWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " "+ hrefT + " saved to '" + file_name + "'\n")
+               logFileWriter.close()
+               logFileReader = open(root_directory + course[0] + "/crawlhistory.log", 'rb')
+               logFile = logFileReader.read()
+               logFileReader.close()
+                       
+                        
                    
                        
         if trapscount == 0:
