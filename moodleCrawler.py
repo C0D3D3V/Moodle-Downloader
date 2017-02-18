@@ -1,5 +1,21 @@
 #!/usr/bin/env python2
 
+#Copyright 2017 Daniel Vogt
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
+
+
 import cookielib
 import urllib2
 import urllib
@@ -196,6 +212,7 @@ for course in courses:
     LoginStatusConntent = CourseSoup.find(class_="logininfo")
     if not LoginStatusConntent is None:
     
+       print(datetime.now().strftime('%H:%M:%S') + " Checking login status.")  
        #Lookup in the Moodle source if it is standard (login / log in on every page)
        #Is a relogin needed ? Try to figure out when relogin is needed.
        if "Logout" not in str(LoginStatusConntent) and "logout" not in str(LoginStatusConntent):
@@ -231,6 +248,8 @@ for course in courses:
              continue
     
           CourseLinkContent = responseCourseLink.read()
+        else:
+           print(datetime.now().strftime('%H:%M:%S') + " Crawler is still loged in.")           
 
  
 
@@ -240,6 +259,10 @@ for course in courses:
     current_dir = root_directory + course[0] + "/"
     for link in course_links:
         hrefCourseFile = link.get('href')
+
+        if hrefCourseFile is None or hrefCourseFile == "":
+             print(datetime.now().strftime('%H:%M:%S') + " There went something wrong, this is an empty link.")
+             continue
  
 
         # Checking only resources... Ignoring forum and folders, etc
@@ -290,7 +313,7 @@ for course in courses:
            continue
         
 
-        print(datetime.now().strftime('%H:%M:%S') + " Start donloading file.")
+        print(datetime.now().strftime('%H:%M:%S') + " Download has started.")
         webFileContent = webFileCourseFile.read()
 
 
@@ -334,7 +357,7 @@ for course in courses:
                     continue
                  
                    
-                 print(datetime.now().strftime('%H:%M:%S') + " Restart donloading file.")
+                 print(datetime.now().strftime('%H:%M:%S') + " Download has restarted.")
                  webFileContent = webFileCourseFile.read()
 
 
@@ -396,7 +419,7 @@ for course in courses:
                print(datetime.now().strftime('%H:%M:%S') + " Connection lost! File does not exist!")
                continue
 
-            print(datetime.now().strftime('%H:%M:%S') + " Start donloading file.")
+            print(datetime.now().strftime('%H:%M:%S') + " Download has started.")
             webFileTrapContent = webFileTrap.read()
 
   
@@ -405,7 +428,7 @@ for course in courses:
                TrapSoup = BeautifulSoup(webFileTrapContent, "lxml") 
                LoginStatusConntent = TrapSoup.find(class_="logininfo")
                if not LoginStatusConntent is None:
-               
+                  print(datetime.now().strftime('%H:%M:%S') + " Checking login status.")  
                   #Lookup in the Moodle source if it is standard (login / log in on every page)
                   #Is a relogin needed ? Try to figure out when relogin is needed.
                   if "Logout" not in str(LoginStatusConntent) and "logout" not in str(LoginStatusConntent):
@@ -439,8 +462,10 @@ for course in courses:
                         print(datetime.now().strftime('%H:%M:%S') + " Connection lost! File does not exist!")
                         continue
     
-                     print(datetime.now().strftime('%H:%M:%S') + " Restart donloading file.")
+                     print(datetime.now().strftime('%H:%M:%S') + " Download has restarted.")
                      webFileTrapContent = webFileTrap.read()
+                  else:
+                     print(datetime.now().strftime('%H:%M:%S') + " Crawler is still loged in.")  
 
 
 
