@@ -356,10 +356,13 @@ for course in courses:
 
 
 
+        print(datetime.now().strftime('%H:%M:%S') + " Debug -2")  
         webFileSoup = BeautifulSoup(webFileContent, "lxml") 
 
         if not isexternlink:
            LoginStatusConntent = webFileSoup.find(class_="logininfo")
+           print(datetime.now().strftime('%H:%M:%S') + " Debug -1")  
+           
            if not LoginStatusConntent is None:
               print(datetime.now().strftime('%H:%M:%S') + " Checking login status.")  
            
@@ -534,8 +537,10 @@ for course in courses:
   
  
             if not isexternLinkT: 
+               print(datetime.now().strftime('%H:%M:%S') + " Debug -2")  
                TrapSoup = BeautifulSoup(webFileTrapContent, "lxml") 
                LoginStatusConntent = TrapSoup.find(class_="logininfo")
+               print(datetime.now().strftime('%H:%M:%S') + " Debug -1")  
                if not LoginStatusConntent is None:
                   print(datetime.now().strftime('%H:%M:%S') + " Checking login status.")  
                   #Lookup in the Moodle source if it is standard (login / log in on every page)
@@ -668,21 +673,27 @@ for course in courses:
         if trapscount == 0:
            if webfileurlCourseFile[-4:] == ".php" or webfileurlCourseFile[-4:] == ".html":
               print(datetime.now().strftime('%H:%M:%S') + " Ups no link was found in this folder!")
-
+ 
            print(datetime.now().strftime('%H:%M:%S') + "  Try to save the page: " + hrefCourseFile)
 
            if webfileurlCourseFile == "":
               webfileurlCourseFile = "index.html"
 
+           print(datetime.now().strftime('%H:%M:%S') + " Debuga 1")
            url = current_dir + webfileurlCourseFile
            #file_name = urllib.unquote(url).decode('utf8')
+
+           print(datetime.now().strftime('%H:%M:%S') + " Debuga 2")
            file_name = url
            if file_name[-4:] == ".php":
               file_name = file_name[:len(file_name) - 4] + ".html"
                  
+           print(datetime.now().strftime('%H:%M:%S') + " Debuga 3")
 
            if file_name.split('.')[-1] == file_name:
               file_name = file_name + ".html"
+
+           print(datetime.now().strftime('%H:%M:%S') + " Debuga 4")
 
            old_name = ""
            if os.path.isfile(file_name):
@@ -699,6 +710,7 @@ for course in courses:
                   break
                ii += 1
                   
+           print(datetime.now().strftime('%H:%M:%S') + " Debuga 5")
                 
            print(datetime.now().strftime('%H:%M:%S') + "  Creating file: '" + file_name + "'")
            pdfFile = open(file_name, 'wb')
