@@ -1,3 +1,5 @@
+#!/usr/bin/env python2
+
 import cookielib
 import urllib2
 import urllib
