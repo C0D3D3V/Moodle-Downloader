@@ -160,7 +160,7 @@ def donwloadFile(downloadFileResponse):
    return downloadFileContent
 
 
-def saveFile(webFileFilename, pathToSave, webFileContent, webFileResponse):
+def saveFile(webFileFilename, pathToSave, webFileContent, webFileResponse, webFileHref):
    if webFileFilename == "":
       webFileFilename = "index.html"
             
@@ -197,7 +197,7 @@ def saveFile(webFileFilename, pathToSave, webFileContent, webFileResponse):
    webFileResponse.close()
    pdfFile.close()
    logFileWriter = open(crawlHistoryFile, 'ab')
-   logFileWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " "+ webFileResponse.geturl() + " saved to '" + file_name + "'\n")
+   logFileWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " "+ webFileHref + " saved to '" + file_name + "'\n")
    logFileWriter.close()
    global logFile
    logFileReader = open(crawlHistoryFile, 'rb')
@@ -632,7 +632,7 @@ for course in courses:
      
                webfileTrapurl = webFileTrap.geturl().split('/')[-1].split('?')[0].encode('ascii', 'ignore').replace('/', '|').replace('\\', '|').replace(' ', '_')
     
-               saveFile(webfileTrapurl, sub_dir, webFileTrapContent, webFileTrap)
+               saveFile(webfileTrapurl, sub_dir, webFileTrapContent, webFileTrap, hrefT)
 
           else:
              log("This page seems not to be a folder.", 4)             
@@ -645,7 +645,7 @@ for course in courses:
  
            log("Try to save the page: " + hrefCourseFile, 4)
            
-           saveFile(webfileurlCourseFile, current_dir, webFileContent, webFileCourseFile) 
+           saveFile(webfileurlCourseFile, current_dir, webFileContent, webFileCourseFile, hrefCourseFile) 
 
     #find dublication in folder  current_dir
     filesBySize = {}
