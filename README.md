@@ -22,6 +22,8 @@ All the files are stored in their respective directories inside the `root_dir` w
 
 - Python 2.7+
 - Beautifulsoup - `sudo apt-get install python-beautifulsoup`
+- Colorama - `sudo pip install colorama`
+- Termcolor - `sudo pip install termcolor`
 
 ### EXTRAS
 
