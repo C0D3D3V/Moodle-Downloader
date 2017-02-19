@@ -13,6 +13,7 @@ Set the following in the file `config.ini` before running the script
 - `url` : URL for moodle authentication
 - `forum` : If forums should also be crawled
 - `history` : If a history file should be used
+- `loglevel` : Sets the level of logging (0-5)
 
 All the files are stored in their respective directories inside the `root_dir` with the names as in moodle.
 
@@ -26,7 +27,11 @@ All the files are stored in their respective directories inside the `root_dir` w
 
 - Put `watch -n 3600 python moodleCrawler.py` in startup to fetch the files every hour.
 
+
+
 This code is the modified version of the downloader created by Vinay Chandra
+
+
 
   Copyright 2017 Daniel Vogt
 
