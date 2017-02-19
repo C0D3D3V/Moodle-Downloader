@@ -266,6 +266,8 @@ password = checkQuotationMarks(conf.get("auth", "password"))
 crawlforum = checkQuotationMarks(conf.get("crawl", "forum")) #/forum/
 usehistory = checkQuotationMarks(conf.get("crawl", "history")) #do not recrawl
 loglevel = checkQuotationMarks(conf.get("crawl", "loglevel"))
+downloadExternals = checkQuotationMarks(conf.get("crawl", "externallinks"))
+
 
 authentication_url = addSlashIfNeeded(checkQuotationMarks(conf.get("auth", "url")))
 
@@ -488,6 +490,9 @@ for course in courses:
            externalLinkWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " "+ hrefCourseFile + "\n")
            externalLinkWriter.close()
            isexternlink = True
+           if downloadExternals == "false":
+              log("Ups this is an external link. I do not crawl external links. Change the settings if you want to crawl external links.", 3)
+              continue
 
 
         if crawlforum == "false" and "/forum/" in hrefCourseFile:
@@ -586,6 +591,9 @@ for course in courses:
                   externalLinkWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " "+ hrefT + "\n")
                   externalLinkWriter.close()
                   isexternLinkT = True
+                  if downloadExternals == "false":
+                     log("Ups this is an external link. I do not crawl external links. Change the settings if you want to crawl external links.", 3)
+                     continue
    
                try:
                   webFileTrap = urllib2.urlopen(hrefT, timeout=10)
