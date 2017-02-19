@@ -160,6 +160,48 @@ def donwloadFile(downloadFileResponse):
    return downloadFileContent
 
 
+def saveFile(webFileFilename, pathToSave, webFileContent, webFileResponse):
+   if webFileFilename == "":
+      webFileFilename = "index.html"
+            
+   if webFileFilename.split('.')[-1] == webFileFilename:
+      webFileFilename = webFileFilename + ".html"
+
+   file_name = pathToSave + webFileFilename
+
+   if file_name[-4:] == ".php":
+      file_name = file_name[:len(file_name) - 4] + ".html"
+   
+   #file_name = urllib.unquote(url).decode('utf8')
+         
+   if os.path.isfile(file_name): 
+      fileend = file_name.split('.')[-1]
+      filebegin = file_name[:(len(file_name) - len(fileend)) - 1]
+         
+      ii = 1
+      while True:
+       new_name = filebegin + "_" + str(ii) + "." + fileend
+       if not os.path.isfile(new_name):
+          file_name = new_name
+          break
+       ii += 1
+     
+       
+   log("Creating new file: '" +  file_name + "'")
+   pdfFile = open(file_name, 'wb')
+   pdfFile.write(webFileContent)
+   webFileResponse.close()
+   pdfFile.close()
+   logFileWriter = open(crawlHistoryFile, 'ab')
+   logFileWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " "+ hrefT + " saved to '" + file_name + "'\n")
+   logFileWriter.close()
+   global logFile
+   logFileReader = open(crawlHistoryFile, 'rb')
+   logFile = logFileReader.read()
+   logFileReader.close()
+
+
+
 
 conf = ConfigParser()
 project_dir = os.path.dirname(os.path.abspath(__file__))
@@ -189,6 +231,8 @@ payload = {
     'password': password
 }
 
+
+crawlHistoryFile = root_directory + ".crawlhistory.log" 
 
 data = urllib.urlencode(payload)
 
@@ -290,19 +334,20 @@ for course in courses:
     if not os.path.isdir(root_directory + course[0]):
         os.mkdir(root_directory+course[0])
     #response1 = urllib2.urlopen(course[1], timeout=10)
-    logFileWriter = open(root_directory + course[0] + "/crawlhistory.log", 'ab')
-    logFileWriter.close()
-    logFileReader = open(root_directory + course[0] + "/crawlhistory.log", 'rb')
+    if not os.path.isfile(crawlHistoryFile):
+       logFileWriter = open(crawlHistoryFile, 'ab')
+       logFileWriter.close()
+
+    logFileReader = open(crawlHistoryFile, 'rb')
     logFile = logFileReader.read()
     logFileReader.close()
     if not course[1] in logFile:
-       logFileWriter = open(root_directory + course[0] + "/crawlhistory.log", 'ab')
+       logFileWriter = open(crawlHistoryFile, 'ab')
        logFileWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " Crawler log file for: "+ course[1] + "\n")
        logFileWriter.close()
-       logFileReader = open(root_directory + course[0] + "/crawlhistory.log", 'rb')
+       logFileReader = open(crawlHistoryFile, 'rb')
        logFile = logFileReader.read()
        logFileReader.close()
-
 
 
     log("Check Course: '" + course[0] + "'")
@@ -347,7 +392,7 @@ for course in courses:
              LoginSoup = BeautifulSoup(LoginContents, "lxml") 
              LoginStatusConntent = LoginSoup.find(class_="logininfo")
              if LoginStatusConntent is None or ("Logout" not in str(LoginStatusConntent) and "logout" not in str(LoginStatusConntent)):  
-                 log(" Cannot connect to moodle or Moodle has changed. Crawler is not logged in. Check your login data.", 3)
+                 log("Cannot connect to moodle or Moodle has changed. Crawler is not logged in. Check your login data.", 3)
                  continue
                
              log("Successfully logged in again.", 4)
@@ -452,16 +497,17 @@ for course in courses:
                      
                      
                     if "errorcode=" in responseLogin.geturl():
-                        log(" Cannot login. Check your login data.", 3)
+                        log("Cannot login. Check your login data.", 3)
                         continue
                     
                     #Lookup in the Moodle source if it is standard   ("Logout" on every Page)
                     LoginSoup = BeautifulSoup(LoginContents, "lxml") 
                     LoginStatusConntent = LoginSoup.find(class_="logininfo")
                     if LoginStatusConntent is None or ("Logout" not in str(LoginStatusConntent) and "logout" not in str(LoginStatusConntent)):  
-                        log(" Cannot connect to moodle or Moodle has changed. Crawler is not logged in. Check your login data.", 3)
+                        log("Cannot connect to moodle or Moodle has changed. Crawler is not logged in. Check your login data.", 3)
                         continue
                       
+                    log("Successfully logged in again.", 4)
                     #reload page
                     try:
                        webFileCourseFile = urllib2.urlopen(hrefCourseFile, timeout=10)
@@ -469,7 +515,6 @@ for course in courses:
                        log("Connection lost! Link does not exist!", 3)
                        continue
                     
-                    log("Successfully logged in again.", 4)
 
                     webFileContent = donwloadFile(webFileCourseFile)  
                  else:
@@ -564,14 +609,14 @@ for course in courses:
                          
                          
                         if "errorcode=" in responseLogin.geturl():
-                            log(" Cannot login. Check your login data.", 3)
+                            log("Cannot login. Check your login data.", 3)
                             continue
                         
                         #Lookup in the Moodle source if it is standard   ("Logout" on every Page)
                         LoginSoup = BeautifulSoup(LoginContents, "lxml") 
                         LoginStatusConntent = LoginSoup.find(class_="logininfo")
                         if LoginStatusConntent is None or ("Logout" not in str(LoginStatusConntent)  and "logout" not in str(LoginStatusConntent) ):  
-                            log(" Cannot connect to moodle or Moodle has changed. Crawler is not logged in. Check your login data.", 3)# 
+                            log("Cannot connect to moodle or Moodle has changed. Crawler is not logged in. Check your login data.", 3)# 
                             continue
                           
                         #reload page
@@ -592,45 +637,8 @@ for course in courses:
      
                webfileTrapurl = webFileTrap.geturl().split('/')[-1].split('?')[0].encode('ascii', 'ignore').replace('/', '|').replace('\\', '|').replace(' ', '_')
     
-               if webfileTrapurl == "":
-                  webfileTrapurl = "index.html"
-                      
-               url = sub_dir + webfileTrapurl
-               file_name = url 
-               if file_name[-4:] == ".php":
-                  file_name = file_name[:len(file_name) - 4] + ".html"
-    
-               if file_name.split('.')[-1] == file_name:
-                  file_name = file_name + ".html"
-   
-               #file_name = urllib.unquote(url).decode('utf8')
-                   
-               old_name = ""
-               if os.path.isfile(file_name):
-                  old_name = file_name
-                  fileend = file_name.split('.')[-1]
-                  filebegin = file_name[:(len(file_name) - len(fileend)) - 1]
-                    
-                  ii = 1
-                  while True:
-                   new_name = filebegin + "_" + str(ii) + "." + fileend
-                   if not os.path.isfile(new_name):
-                      file_name = new_name
-                      break
-                   ii += 1
-                 
-     
-               log("Creating new file: '" +  file_name + "'")
-               pdfFile = open(file_name, 'wb')
-               pdfFile.write(webFileTrapContent)
-               webFileTrap.close()
-               pdfFile.close()
-               logFileWriter = open(root_directory + course[0] + "/crawlhistory.log", 'ab')
-               logFileWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " "+ hrefT + " saved to '" + file_name + "'\n")
-               logFileWriter.close()
-               logFileReader = open(root_directory + course[0] + "/crawlhistory.log", 'rb')
-               logFile = logFileReader.read()
-               logFileReader.close()
+               saveFile(webfileTrapurl, sub_dir, webFileTrapContent, webFileTrap)
+
           else:
              log("This page seems not to be a folder.", 4)             
                       
@@ -641,47 +649,8 @@ for course in courses:
               log("Ups no link was found in this folder!", 3)
  
            log("Try to save the page: " + hrefCourseFile, 4)
-
-           if webfileurlCourseFile == "":
-              webfileurlCourseFile = "index.html"
- 
-           url = current_dir + webfileurlCourseFile
-           #file_name = urllib.unquote(url).decode('utf8')
- 
-           file_name = url
-           if file_name[-4:] == ".php":
-              file_name = file_name[:len(file_name) - 4] + ".html"
-                  
-           if file_name.split('.')[-1] == file_name:
-              file_name = file_name + ".html"
- 
-
-           old_name = ""
-           if os.path.isfile(file_name):
-                 
-              old_name = file_name
-              fileend = file_name.split('.')[-1]
-              filebegin = file_name[:(len(file_name) - len(fileend)) - 1]
-                   
-              ii = 1
-              while True:
-               new_name = filebegin + "_" + str(ii) + "." + fileend
-               if not os.path.isfile(new_name):
-                  file_name = new_name
-                  break
-               ii += 1
-                   
-           log("Creating file: '" + file_name + "'")
-           pdfFile = open(file_name, 'wb')
-           pdfFile.write(webFileContent)
-           webFileCourseFile.close()
-           pdfFile.close()
-           logFileWriter = open(root_directory + course[0] + "/crawlhistory.log", 'ab')
-           logFileWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " "+ hrefCourseFile + " saved to '" + file_name + "'\n")
-           logFileWriter.close()
-           logFileReader = open(root_directory + course[0] + "/crawlhistory.log", 'rb')
-           logFile = logFileReader.read()
-           logFileReader.close()
+           
+           saveFile(webfileurlCourseFile, current_dir, webFileContent, webFileCourseFile) 
 
     #find dublication in folder  current_dir
     filesBySize = {}
