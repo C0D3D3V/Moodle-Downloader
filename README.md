@@ -14,7 +14,7 @@ Set the following in the file `config.ini` before running the script
 - `forum` : If forums should also be crawled
 - `history` : If a history file should be used
 - `loglevel` : Sets the level of logging (0-5)
-- `externallinks` : If external links should get crawled.
+- `externallinks` : If external links should get crawled
 
 All the files are stored in their respective directories inside the `root_dir` with the names as in moodle.
 
