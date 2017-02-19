@@ -66,6 +66,8 @@ def walker(arg, dirname, fnames):
 def checkQuotationMarks(settingString):
    if not settingString is None and settingString[0] == "\"" and settingString[-1] == "\"":
       settingString = settingString[1:-1]
+   if settingString is None:
+      settingString = ""
    return settingString
  
 
