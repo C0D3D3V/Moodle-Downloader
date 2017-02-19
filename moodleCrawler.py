@@ -117,6 +117,50 @@ def log(logString, level=0):
 
 
 
+
+def donwloadFile(downloadFileResponse):
+   log("Download has started.", 4)
+       
+   downloadFileContent = ""
+   
+   if downloadFileResponse is None:
+      log("Faild to download file", 4)
+      return ""
+
+   try:
+       total_size = downloadFileResponse.info().getheader('Content-Length').strip()
+       header = True
+   except Exception:
+       log("No Content-Length available.", 5)
+       header = False # a response doesn't always include the "Content-Length" header
+          
+   if header:
+       total_size = int(total_size)
+         
+   bytes_so_far = 0
+        
+   while True:
+       downloadFileContentBuffer = downloadFileResponse.read(8192)
+       if not downloadFileContentBuffer: 
+           break
+           
+       bytes_so_far += len(downloadFileContentBuffer) 
+       downloadFileContent = downloadFileContent + downloadFileContentBuffer
+              
+       if not header: 
+          log("Downloaded %d bytes" % (bytes_so_far), 5)
+           
+       else:
+          percent = float(bytes_so_far) / total_size
+          percent = round(percent*100, 2)
+          log("Downloaded %d of %d bytes (%0.2f%%)\r" % (bytes_so_far, total_size, percent), 5)
+            
+          
+   log("Download complete.", 4)
+   return downloadFileContent
+
+
+
 conf = ConfigParser()
 project_dir = os.path.dirname(os.path.abspath(__file__))
 conf.read(os.path.join(project_dir, 'config.ini'))
@@ -306,6 +350,7 @@ for course in courses:
                  log(" Cannot connect to moodle or Moodle has changed. Crawler is not logged in. Check your login data.", 3)
                  continue
                
+             log("Successfully logged in again.", 4)
              #reload page  
              log("Recheck Course: '" + course[0] + "'", 4)
              try:
@@ -379,43 +424,7 @@ for course in courses:
            log("Connection lost! Link does not exist!", 3)
            continue
         
-
-        log("Download has started.", 4)
-
-        webFileContent = ""
-
-        try:
-            total_size = webFileCourseFile.info().getheader('Content-Length').strip()
-            header = True
-        except Exception:
-            log("No Content-Length available.", 5)
-            header = False # a response doesn't always include the "Content-Length" header
-
-        if header:
-            total_size = int(total_size)
- 
-        bytes_so_far = 0
- 
-        while True:
-            webFileContentBuffer = webFileCourseFile.read(8192)
-            if not webFileContentBuffer: 
-                break
-        
-            bytes_so_far += len(webFileContentBuffer) 
-            webFileContent = webFileContent + webFileContentBuffer
-
-            if not header: 
-               log("Downloaded %d bytes" % (bytes_so_far), 5)
- 
-            else:
-               percent = float(bytes_so_far) / total_size
-               percent = round(percent*100, 2)
-               log("Downloaded %d of %d bytes (%0.2f%%)\r" % (bytes_so_far, total_size, percent), 5)
- 
-
-        log("Download complete.", 4)  
-
-
+        webFileContent = donwloadFile(webFileCourseFile)
 
         
         if "text/html" in webFileCourseFile.info().getheader('Content-Type'):
@@ -460,41 +469,9 @@ for course in courses:
                        log("Connection lost! Link does not exist!", 3)
                        continue
                     
-                      
-                    log("Download has restarted.", 4)
-                    #webFileContent = webFileCourseFile.read()
-                    webFileContent = ""
-   
-                    try:
-                        total_size = webFileCourseFile.info().getheader('Content-Length').strip()
-                        header = True
-                    except Exception:
-                        log("No Content-Length available.", 5)
-                        header = False # a response doesn't always include the "Content-Length" header
-            
-                    if header:
-                        total_size = int(total_size)
-             
-                    bytes_so_far = 0
-             
-                    while True:
-                        webFileContentBuffer = webFileCourseFile.read(8192)
-                        if not webFileContentBuffer: 
-                            break
-                    
-                        bytes_so_far += len(webFileContentBuffer) 
-                        webFileContent = webFileContent + webFileContentBuffer
-            
-                        if not header: 
-                           log("Downloaded %d bytes" % (bytes_so_far), 5)
-             
-                        else:
-                           percent = float(bytes_so_far) / total_size
-                           percent = round(percent*100, 2)
-                           log("Downloaded %d of %d bytes (%0.2f%%)\r" % (bytes_so_far, total_size, percent), 5)
-    
-   
-                    log("Download complete.", 4)  
+                    log("Successfully logged in again.", 4)
+
+                    webFileContent = donwloadFile(webFileCourseFile)  
                  else:
                     log("Crawler is still loged in.", 4)  
 
@@ -561,45 +538,11 @@ for course in courses:
                except Exception:
                   log("Connection lost! File does not exist!", 3)
                   continue
-   
-               log("Download has started.", 4)
+    
               # webFileTrapContent = webFileTrap.read()
    
-   
-               webFileTrapContent = ""
-   
-               try:
-                   total_size = webFileTrap.info().getheader('Content-Length').strip()
-                   header = True
-               except Exception:
-                   log("No Content-Length available.", 5)
-                   header = False # a response doesn't always include the "Content-Length" header
-       
-               if header:
-                   total_size = int(total_size)
-        
-               bytes_so_far = 0
-        
-               while True:
-                   webFileTrapBuffer = webFileTrap.read(8192)
-                   if not webFileTrapBuffer: 
-                       break
                
-                   bytes_so_far += len(webFileTrapBuffer) 
-                   webFileTrapContent = webFileTrapContent + webFileTrapBuffer
-       
-                   if not header: 
-                      log("Downloaded %d bytes" % (bytes_so_far), 5)
-        
-                   else:
-                      percent = float(bytes_so_far) / total_size
-                      percent = round(percent*100, 2)
-                      log("Downloaded %d of %d bytes (%0.2f%%)\r" % (bytes_so_far, total_size, percent), 5)
-    
-   
-               log("Download complete.", 4)  
-   
-      
+               webFileTrapContent = donwloadFile(webFileTrap)   
    
                if not isexternLinkT and "text/html" in webFileTrap.info().getheader('Content-Type'):
                   TrapSoup = BeautifulSoup(webFileTrapContent, "lxml") 
@@ -637,41 +580,10 @@ for course in courses:
                         except Exception:
                            log("Connection lost! File does not exist!", 3)
                            continue
-       
-                        log("Download has restarted.", 4)
-                        #webFileTrapContent = webFileTrap.read()
-                        webFileTrapContent = ""
-            
-                        try:
-                            total_size = webFileTrap.info().getheader('Content-Length').strip()
-                            header = True
-                        except Exception:
-                            log("No Content-Length available.", 5)
-                            header = False # a response doesn't always include the "Content-Length" header
-                
-                        if header:
-                            total_size = int(total_size)
-                 
-                        bytes_so_far = 0
-                 
-                        while True:
-                            webFileTrapBuffer = webFileTrap.read(8192)
-                            if not webFileTrapBuffer: 
-                                break
+                        log("Successfully logged in again.", 4)
                         
-                            bytes_so_far += len(webFileTrapBuffer) 
-                            webFileTrapContent = webFileTrapContent + webFileTrapBuffer
-                
-                            if not header: 
-                               log("Downloaded %d bytes" % (bytes_so_far), 5)
-                 
-                            else:
-                               percent = float(bytes_so_far) / total_size
-                               percent = round(percent*100, 2)
-                               log("Downloaded %d of %d bytes (%0.2f%%)\r" % (bytes_so_far, total_size, percent), 5)
-              
-   
-                        log("Download complete.", 4)  
+
+                        webFileTrapContent = donwloadFile(webFileTrap)   
                      else:
                         log("Crawler is still loged in.", 4)  
    
@@ -719,8 +631,9 @@ for course in courses:
                logFileReader = open(root_directory + course[0] + "/crawlhistory.log", 'rb')
                logFile = logFileReader.read()
                logFileReader.close()
-                       
-                        
+          else:
+             log("This page seems not to be a folder.", 4)             
+                      
                    
                        
         if trapscount == 0:
