@@ -174,6 +174,10 @@ def saveFile(webFileFilename, pathToSave, webFileContent, webFileResponse):
    
    #file_name = urllib.unquote(url).decode('utf8')
          
+
+   if not os.path.isdir(pathToSave):
+      os.makedirs(pathToSave)    
+
    if os.path.isfile(file_name): 
       fileend = file_name.split('.')[-1]
       filebegin = file_name[:(len(file_name) - len(fileend)) - 1]
@@ -186,19 +190,66 @@ def saveFile(webFileFilename, pathToSave, webFileContent, webFileResponse):
           break
        ii += 1
      
-       
+   
    log("Creating new file: '" +  file_name + "'")
    pdfFile = open(file_name, 'wb')
    pdfFile.write(webFileContent)
    webFileResponse.close()
    pdfFile.close()
    logFileWriter = open(crawlHistoryFile, 'ab')
-   logFileWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " "+ hrefT + " saved to '" + file_name + "'\n")
+   logFileWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " "+ webFileResponse.geturl() + " saved to '" + file_name + "'\n")
    logFileWriter.close()
    global logFile
    logFileReader = open(crawlHistoryFile, 'rb')
    logFile = logFileReader.read()
    logFileReader.close()
+
+
+#status:
+# 0 - Not logged in
+# 1 - Logged in
+# 2 - Had to re login
+# 3 - Something went wrong
+
+def checkLoginStatus(pageContent):
+   PageSoup = BeautifulSoup(pageContent, "lxml") 
+   LoginStatusConntent = PageSoup.find(class_="logininfo")
+   if not LoginStatusConntent is None:
+   
+      log("Checking login status.", 4)  
+      #Lookup in the Moodle source if it is standard (login / log in on every page)
+      #Is a relogin needed ? Try to figure out when relogin is needed.
+      if "Logout" not in str(LoginStatusConntent) and "logout" not in str(LoginStatusConntent):
+         log("Try to relogin, connection maybe lost.", 3)
+         
+         try:
+            responseLogin = urllib2.urlopen(req, timeout=10)
+         except Exception as e:
+            raise NotGoodErrror(e)
+          
+         LoginContents = responseLogin.read()
+          
+          
+         if "errorcode=" in responseLogin.geturl():
+             log("Cannot login. Check your login data.", 3)
+             return 0
+         
+         #Lookup in the Moodle source if it is standard   ("Logout" on every Page)
+         LoginSoup = BeautifulSoup(LoginContents, "lxml") 
+         LoginStatusConntent = LoginSoup.find(class_="logininfo")
+         if LoginStatusConntent is None or ("Logout" not in str(LoginStatusConntent) and "logout" not in str(LoginStatusConntent)):  
+             log("Cannot connect to moodle or Moodle has changed. Crawler is not logged in. Check your login data.", 3)
+             return 0
+           
+         log("Successfully logged in again.", 4)
+         #reload page  
+         return 2
+      else:
+         log("Crawler is still loged in.", 4)
+         return 1
+   else:
+      log("No logininfo on this page.", 5)
+      return 3    
 
 
 
@@ -282,6 +333,14 @@ if mainpageURL.startswith("http://"):
 
 domainMoodle = domainMoodle.split("/")[0]
  
+ #create necessary stuff
+if not os.path.isfile(crawlHistoryFile):
+   logFileWriter = open(crawlHistoryFile, 'ab')
+   logFileWriter.close()
+   
+logFileReader = open(crawlHistoryFile, 'rb')
+logFile = logFileReader.read()
+logFileReader.close()
 
 
 log("Searching Courses...", 2)
@@ -331,24 +390,8 @@ for course_string in course_list:
 
 
 for course in courses:
-    if not os.path.isdir(root_directory + course[0]):
-        os.mkdir(root_directory+course[0])
     #response1 = urllib2.urlopen(course[1], timeout=10)
-    if not os.path.isfile(crawlHistoryFile):
-       logFileWriter = open(crawlHistoryFile, 'ab')
-       logFileWriter.close()
-
-    logFileReader = open(crawlHistoryFile, 'rb')
-    logFile = logFileReader.read()
-    logFileReader.close()
-    if not course[1] in logFile:
-       logFileWriter = open(crawlHistoryFile, 'ab')
-       logFileWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " Crawler log file for: "+ course[1] + "\n")
-       logFileWriter.close()
-       logFileReader = open(crawlHistoryFile, 'rb')
-       logFile = logFileReader.read()
-       logFileReader.close()
-
+   
 
     log("Check Course: '" + course[0] + "'")
 
@@ -360,56 +403,43 @@ for course in courses:
 
     CourseLinkContent = responseCourseLink.read()
 
- 
          
 
-    if "text/html" in responseCourseLink.info().getheader('Content-Type'):
+    if "text/html" in responseCourseLink.info().getheader('Content-Type'): 
+       try:
+          loginStatus = checkLoginStatus(CourseLinkContent) 
+       except Exception:
+          log("Connection lost! It is not possible to connect to moodle!", 3)
+          continue
+
+       if loginStatus == 0:
+          continue
+       elif loginStatus == 2:
+          log("Recheck Course: '" + course[0] + "'", 4)
+          try:
+             responseCourseLink = urllib2.urlopen(course[1], timeout=10)
+          except Exception:
+             log("Connection lost! Course does not exist!", 3)
+             continue
+     
+          CourseLinkContent = responseCourseLink.read()
+          
+       #elif loginStatus == 3:
+          #this should not heppend
+          #mh maybe continue ?  
 
        CourseSoup = BeautifulSoup(CourseLinkContent, "lxml") 
-       LoginStatusConntent = CourseSoup.find(class_="logininfo")
-       if not LoginStatusConntent is None:
-       
-          log("Checking login status.", 4)  
-          #Lookup in the Moodle source if it is standard (login / log in on every page)
-          #Is a relogin needed ? Try to figure out when relogin is needed.
-          if "Logout" not in str(LoginStatusConntent) and "logout" not in str(LoginStatusConntent):
-             log("Try to relogin, connection maybe lost.", 3)
-             
-             try:
-                responseLogin = urllib2.urlopen(req, timeout=10)
-             except Exception:
-                log("Connection lost! It is not possible to connect to moodle!", 3)
-                continue
-              
-             LoginContents = responseLogin.read()
-              
-              
-             if "errorcode=" in responseLogin.geturl():
-                 log("Cannot login. Check your login data.", 3)
-                 continue
-             
-             #Lookup in the Moodle source if it is standard   ("Logout" on every Page)
-             LoginSoup = BeautifulSoup(LoginContents, "lxml") 
-             LoginStatusConntent = LoginSoup.find(class_="logininfo")
-             if LoginStatusConntent is None or ("Logout" not in str(LoginStatusConntent) and "logout" not in str(LoginStatusConntent)):  
-                 log("Cannot connect to moodle or Moodle has changed. Crawler is not logged in. Check your login data.", 3)
-                 continue
-               
-             log("Successfully logged in again.", 4)
-             #reload page  
-             log("Recheck Course: '" + course[0] + "'", 4)
-             try:
-                responseCourseLink = urllib2.urlopen(course[1], timeout=10)
-             except Exception:
-                log("Connection lost! Course does not exist!", 3)
-                continue
-       
-             CourseLinkContent = responseCourseLink.read()
-          else:
-             log("Crawler is still loged in.", 4)           
+
+
+    if not course[1] in logFile:
+       logFileWriter = open(crawlHistoryFile, 'ab')
+       logFileWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " Crawler log file for: "+ course[1] + "\n")
+       logFileWriter.close()
+       logFileReader = open(crawlHistoryFile, 'rb')
+       logFile = logFileReader.read()
+       logFileReader.close()
 
  
-
     course_links = CourseSoup.find(id="region-main").find_all('a')
 
 
@@ -451,7 +481,9 @@ for course in courses:
 
         if not domainMoodle in hrefCourseFile:
            log("This is an external link. I will store it in the 'externel-links.log' file", 2)
-           #log("I will try to find more links on the external page! This will fail maybe.", 4)
+           #log("I will try to find more links on the external page! This will fail maybe.", 4) 
+           if not os.path.isdir(current_dir):
+              os.makedirs(current_dir)   
            externalLinkWriter = open(current_dir + "externel-links.log", 'ab')
            externalLinkWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " "+ hrefCourseFile + "\n")
            externalLinkWriter.close()
@@ -473,56 +505,32 @@ for course in courses:
 
         
         if "text/html" in webFileCourseFile.info().getheader('Content-Type'):
- 
-           webFileSoup = BeautifulSoup(webFileContent, "lxml") 
-   
            if not isexternlink:
-              LoginStatusConntent = webFileSoup.find(class_="logininfo") 
-   
-              if not LoginStatusConntent is None:
-                 log("Checking login status.", 4)  
-              
-                 #Lookup in the Moodle source if it is standard (login / log in on every page)
-                 #Is a relogin needed ? Try to figure out when relogin is needed.
-                 if "Logout" not in str(LoginStatusConntent) and "logout" not in str(LoginStatusConntent):
-                    log("Try to relogin, connection maybe lost.", 3)
-                    
-                    try:
-                       responseLogin = urllib2.urlopen(req, timeout=10)
-                    except Exception:
-                       log("Connection lost! It is not possible to connect to moodle!", 3)
-                       continue
+              try:
+                 loginStatus = checkLoginStatus(webFileContent)
+                 
+              except Exception:
+                 log("Connection lost! It is not possible to connect to moodle!", 3)
+                 continue
+
+              if loginStatus == 0:
+                  continue
+              elif loginStatus == 2:
+                 try:
+                    webFileCourseFile = urllib2.urlopen(hrefCourseFile, timeout=10)
+                 except Exception:
+                    log("Connection lost! Link does not exist!", 3)
+                    continue
+                 
                      
-                    LoginContents = responseLogin.read()
-                     
-                     
-                    if "errorcode=" in responseLogin.geturl():
-                        log("Cannot login. Check your login data.", 3)
-                        continue
-                    
-                    #Lookup in the Moodle source if it is standard   ("Logout" on every Page)
-                    LoginSoup = BeautifulSoup(LoginContents, "lxml") 
-                    LoginStatusConntent = LoginSoup.find(class_="logininfo")
-                    if LoginStatusConntent is None or ("Logout" not in str(LoginStatusConntent) and "logout" not in str(LoginStatusConntent)):  
-                        log("Cannot connect to moodle or Moodle has changed. Crawler is not logged in. Check your login data.", 3)
-                        continue
-                      
-                    log("Successfully logged in again.", 4)
-                    #reload page
-                    try:
-                       webFileCourseFile = urllib2.urlopen(hrefCourseFile, timeout=10)
-                    except Exception:
-                       log("Connection lost! Link does not exist!", 3)
-                       continue
-                    
-
-                    webFileContent = donwloadFile(webFileCourseFile)  
-                 else:
-                    log("Crawler is still loged in.", 4)  
-
-
-
-
+                 webFileContent = donwloadFile(webFileCourseFile)  
+  
+               #elif loginStatus == 3:
+                  #this should not heppend
+                  #mh maybe continue ?  
+        
+           webFileSoup = BeautifulSoup(webFileContent, "lxml") 
+    
 
         webfileurlCourseFile = webFileCourseFile.geturl().split('/')[-1].split('?')[0].encode('ascii', 'ignore').replace('/', '|').replace('\\', '|').replace(' ', '_')
 
@@ -542,9 +550,7 @@ for course in courses:
              
              myTitle = myTitle.encode('ascii', 'ignore').replace('/', '|').replace('\\', '|').replace(' ', '_').replace('.', '_').replace(course[0] + ":_", '')
    
-             sub_dir = root_directory + course[0] + "/" + myTitle + "/"
-             if not os.path.isdir(root_directory + course[0] + "/" + myTitle):
-                os.mkdir(root_directory + course[0] + "/" + myTitle)
+             sub_dir = root_directory + course[0] + "/" + myTitle + "/" 
    
              for traplink in trap_links:
                hrefT = traplink.get('href')
@@ -573,6 +579,9 @@ for course in courses:
    
                if not domainMoodle in hrefT: 
                   log("This is an external link. I will store it in the 'externel-links.log' file", 4)
+
+                  if not os.path.isdir(sub_dir):
+                     os.makedirs(sub_dir)    
                   externalLinkWriter = open(sub_dir + "externel-links.log", 'ab')
                   externalLinkWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " "+ hrefT + "\n")
                   externalLinkWriter.close()
@@ -590,50 +599,28 @@ for course in courses:
                webFileTrapContent = donwloadFile(webFileTrap)   
    
                if not isexternLinkT and "text/html" in webFileTrap.info().getheader('Content-Type'):
-                  TrapSoup = BeautifulSoup(webFileTrapContent, "lxml") 
-                  LoginStatusConntent = TrapSoup.find(class_="logininfo")   
-                  if not LoginStatusConntent is None:
-                     log("Checking login status.", 4)  
-                     #Lookup in the Moodle source if it is standard (login / log in on every page)
-                     #Is a relogin needed ? Try to figure out when relogin is needed.
-                     if "Logout" not in str(LoginStatusConntent) and "logout" not in str(LoginStatusConntent):
-                        log("Try to relogin, connection maybe lost.", 3)
-                        
-                        try:
-                           responseLogin = urllib2.urlopen(req, timeout=10)
-                        except Exception:
-                           log("Connection lost! It is not possible to connect to moodle!", 3)
-                           continue
-                         
-                        LoginContents = responseLogin.read()
-                         
-                         
-                        if "errorcode=" in responseLogin.geturl():
-                            log("Cannot login. Check your login data.", 3)
-                            continue
-                        
-                        #Lookup in the Moodle source if it is standard   ("Logout" on every Page)
-                        LoginSoup = BeautifulSoup(LoginContents, "lxml") 
-                        LoginStatusConntent = LoginSoup.find(class_="logininfo")
-                        if LoginStatusConntent is None or ("Logout" not in str(LoginStatusConntent)  and "logout" not in str(LoginStatusConntent) ):  
-                            log("Cannot connect to moodle or Moodle has changed. Crawler is not logged in. Check your login data.", 3)# 
-                            continue
-                          
-                        #reload page
-                        try:
-                           webFileTrap = urllib2.urlopen(hrefT, timeout=10)
-                        except Exception:
-                           log("Connection lost! File does not exist!", 3)
-                           continue
-                        log("Successfully logged in again.", 4)
-                        
+                  try:
+                     loginStatus = checkLoginStatus(webFileTrapContent)
+                     
+                  except Exception:
+                     log("Connection lost! It is not possible to connect to moodle!", 3)
+                     continue
 
-                        webFileTrapContent = donwloadFile(webFileTrap)   
-                     else:
-                        log("Crawler is still loged in.", 4)  
-   
-   
-   
+                  if loginStatus == 0:
+                      continue
+                  elif loginStatus == 2:
+                     try:
+                       webFileTrap = urllib2.urlopen(hrefT, timeout=10)
+                     except Exception:
+                       log("Connection lost! Link does not exist!", 3)
+                       continue
+                       
+                     webFileTrapContent = donwloadFile(webFileTrap)  
+      
+                   #elif loginStatus == 3:
+                      #this should not heppend
+                      #mh maybe continue ?  
+            
      
                webfileTrapurl = webFileTrap.geturl().split('/')[-1].split('?')[0].encode('ascii', 'ignore').replace('/', '|').replace('\\', '|').replace(' ', '_')
     
