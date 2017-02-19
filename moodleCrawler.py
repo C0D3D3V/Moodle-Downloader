@@ -32,9 +32,23 @@ import filecmp
 from datetime import datetime
 from ConfigParser import ConfigParser
 
-from bs4 import BeautifulSoup
-from colorama import init
-from termcolor import colored
+try:
+   from bs4 import BeautifulSoup
+except Exception, e:
+   print("Module BeautifulSoup4 is missing!")
+   exit(1)
+
+try:
+   from colorama import init
+except Exception, e:
+   print("Module Colorama is missing!")
+   exit(1)
+
+try:
+   from termcolor import colored
+except Exception, e:
+   print("Module Termcolor is missing!")
+   exit(1)
 
 # use Colorama to make Termcolor work on Windows too
 init()
