@@ -33,6 +33,12 @@ from datetime import datetime
 from ConfigParser import ConfigParser
 
 from bs4 import BeautifulSoup
+from colorama import init
+from termcolor import colored
+
+# use Colorama to make Termcolor work on Windows too
+init()
+
 
 filesBySize = {}
 
@@ -69,7 +75,7 @@ def addSlashIfNeeded(settingString):
    return settingString
 
 
-#Loglevel:
+#Log levels:
 # - Level 0: Minimal Information + small Errors
 # - Level 1: More Information + Successes 
 # - Level 2: Doing Statemants + Found information
@@ -80,7 +86,19 @@ def addSlashIfNeeded(settingString):
  
 def log(logString, level=0):
    if level <= int(loglevel):
-      print(datetime.now().strftime('%H:%M:%S') + " " + logString)
+      if level == 0:
+         print(datetime.now().strftime('%H:%M:%S') + " " + logString)
+      elif level == 1:
+         print(colored(datetime.now().strftime('%H:%M:%S') + " " + logString, "green")) 
+      elif level == 2:
+         print(colored(datetime.now().strftime('%H:%M:%S') + " " + logString, "yellow"))
+      elif level == 3:
+         print(colored(datetime.now().strftime('%H:%M:%S') + " " + logString, "red"))
+      elif level == 4:
+         print(colored(datetime.now().strftime('%H:%M:%S') + " " + logString, "magenta"))
+      elif level == 5:
+         print(colored(datetime.now().strftime('%H:%M:%S') + " " + logString, "cyan"))
+
 
 
 conf = ConfigParser()
