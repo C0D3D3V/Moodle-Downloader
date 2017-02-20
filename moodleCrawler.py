@@ -394,7 +394,7 @@ for course_string in course_list:
     aCourse = CourseTitleSoup.find('a')
     #course_name = aCourse.text.encode('ascii', 'ignore').replace('/', '|').replace('\\', '|').replace(' ', '_').replace('.', '_')
    
-    course_name = decodeFilename(aCourse.text)
+    course_name = decodeFilename(aCourse.text).strip("-")
 
     course_link = aCourse.get('href')
     #if course_name == "TINF15B5: Programmieren \ Java":
@@ -555,7 +555,7 @@ for course in courses:
 
         #webfileurlCourseFile = webFileCourseFile.geturl().split('/')[-1].split('?')[0].encode('ascii', 'ignore').replace('/', '|').replace('\\', '|').replace(' ', '_')
 
-        webfileurlCourseFile = decodeFilename(webFileCourseFile.geturl().split('/')[-1].split('?')[0])
+        webfileurlCourseFile = decodeFilename(webFileCourseFile.geturl().split('/')[-1].split('?')[0]).strip("-")
 
         trapscount = 0
          
@@ -571,10 +571,10 @@ for course in courses:
                   
              myTitle = webFileSoup.title.string
              
-             #myTitle = myTitle.encode('ascii', 'ignore').replace('/', '|').replace('\\', '|').replace(' ', '_').replace('.', '_').replace(course[0] + ":_", '')
+             #myTitle = myTitle.encode('ascii', 'ignore').replace('/', '|').replace('\\', '|').replace(' ', '_').replace('.', '_')
    
 
-             myTitle = decodeFilename(myTitle)
+             myTitle = decodeFilename(myTitle).replace(course[0], '').strip("-")
 
              sub_dir = root_directory + course[0] + "/" + myTitle + "/" 
    
@@ -650,7 +650,7 @@ for course in courses:
                       #this should not heppend
                       #mh maybe continue ?  
             
-               webfileTrapurl = decodeFilename(webFileTrap.geturl().split('/')[-1].split('?')[0])
+               webfileTrapurl = decodeFilename(webFileTrap.geturl().split('/')[-1].split('?')[0]).strip("-")
                # webfileTrapurl = webFileTrap.geturl().split('/')[-1].split('?')[0].encode('ascii', 'ignore').replace('/', '|').replace('\\', '|').replace(' ', '_')
     
                saveFile(webfileTrapurl, sub_dir, webFileTrapContent, webFileTrap, hrefT)
