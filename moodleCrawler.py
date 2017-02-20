@@ -1,4 +1,5 @@
 #!/usr/bin/env python2
+# -*- coding: utf-8 -*-
 
 #  Copyright 2017 Daniel Vogt
 #
@@ -19,6 +20,7 @@
 import cookielib
 import urllib2
 import urllib
+import io
 import os
 import os.path
 import hashlib
@@ -27,7 +29,7 @@ import stat
 import md5
 import re
 import filecmp
-
+import sys
 
 from datetime import datetime
 from ConfigParser import ConfigParser
@@ -53,6 +55,10 @@ except Exception, e:
 # use Colorama to make Termcolor work on Windows too
 init()
 
+
+#utf8 shit
+reload(sys)
+sys.setdefaultencoding('utf-8')
 
 filesBySize = {}
 
@@ -192,15 +198,15 @@ def saveFile(webFileFilename, pathToSave, webFileContent, webFileResponse, webFi
      
    
    log("Creating new file: '" +  file_name + "'")
-   pdfFile = open(file_name, 'wb')
+   pdfFile = io.open(file_name, 'wb')
    pdfFile.write(webFileContent)
    webFileResponse.close()
    pdfFile.close()
-   logFileWriter = open(crawlHistoryFile, 'ab')
+   logFileWriter = io.open(crawlHistoryFile, 'ab')
    logFileWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " "+ webFileHref + " saved to '" + file_name + "'\n")
    logFileWriter.close()
    global logFile
-   logFileReader = open(crawlHistoryFile, 'rb')
+   logFileReader = io.open(crawlHistoryFile, 'rb')
    logFile = logFileReader.read()
    logFileReader.close()
 
@@ -252,6 +258,13 @@ def checkLoginStatus(pageContent):
       return 3    
 
 
+
+def decodeFilename(fileName):
+  htmlDecode = urllib.unquote(fileName).decode('utf8')
+  htmlDecode = htmlDecode.replace('/', '-').replace('\\', '-').replace(' ', '-').replace('#', '-').replace('%', '-').replace('&', '-').replace('{', '-').replace('}', '-').replace('<', '-')
+  htmlDecode = htmlDecode.replace('>', '-').replace('*', '-').replace('?', '-').replace('$', '-').replace('!', '-').replace(u'‘', '-').replace('|', '-').replace('=', '-').replace(u'`', '-').replace('+', '-')
+  htmlDecode = htmlDecode.replace(':', '-').replace('@', '-').replace('"', '-')
+  return htmlDecode
 
 
 conf = ConfigParser()
@@ -379,7 +392,10 @@ courses = []
 for course_string in course_list:
     CourseTitleSoup = BeautifulSoup(course_string, "lxml")
     aCourse = CourseTitleSoup.find('a')
-    course_name = aCourse.text.encode('ascii', 'ignore').replace('/', '|').replace('\\', '|').replace(' ', '_').replace('.', '_')
+    #course_name = aCourse.text.encode('ascii', 'ignore').replace('/', '|').replace('\\', '|').replace(' ', '_').replace('.', '_')
+   
+    course_name = decodeFilename(aCourse.text)
+
     course_link = aCourse.get('href')
     #if course_name == "TINF15B5: Programmieren \ Java":
     #   blockCourse = False
@@ -486,7 +502,7 @@ for course in courses:
            #log("I will try to find more links on the external page! This will fail maybe.", 4) 
            if not os.path.isdir(current_dir):
               os.makedirs(current_dir)   
-           externalLinkWriter = open(current_dir + "externel-links.log", 'ab')
+           externalLinkWriter = io.open(current_dir + "externel-links.log", 'ab')
            externalLinkWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " "+ hrefCourseFile + "\n")
            externalLinkWriter.close()
            isexternlink = True
@@ -537,7 +553,9 @@ for course in courses:
            webFileSoup = BeautifulSoup(webFileContent, "lxml") 
     
 
-        webfileurlCourseFile = webFileCourseFile.geturl().split('/')[-1].split('?')[0].encode('ascii', 'ignore').replace('/', '|').replace('\\', '|').replace(' ', '_')
+        #webfileurlCourseFile = webFileCourseFile.geturl().split('/')[-1].split('?')[0].encode('ascii', 'ignore').replace('/', '|').replace('\\', '|').replace(' ', '_')
+
+        webfileurlCourseFile = decodeFilename(webFileCourseFile.geturl().split('/')[-1].split('?')[0])
 
         trapscount = 0
          
@@ -553,8 +571,11 @@ for course in courses:
                   
              myTitle = webFileSoup.title.string
              
-             myTitle = myTitle.encode('ascii', 'ignore').replace('/', '|').replace('\\', '|').replace(' ', '_').replace('.', '_').replace(course[0] + ":_", '')
+             #myTitle = myTitle.encode('ascii', 'ignore').replace('/', '|').replace('\\', '|').replace(' ', '_').replace('.', '_').replace(course[0] + ":_", '')
    
+
+             myTitle = decodeFilename(myTitle)
+
              sub_dir = root_directory + course[0] + "/" + myTitle + "/" 
    
              for traplink in trap_links:
@@ -587,7 +608,7 @@ for course in courses:
 
                   if not os.path.isdir(sub_dir):
                      os.makedirs(sub_dir)    
-                  externalLinkWriter = open(sub_dir + "externel-links.log", 'ab')
+                  externalLinkWriter = io.open(sub_dir + "externel-links.log", 'ab')
                   externalLinkWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " "+ hrefT + "\n")
                   externalLinkWriter.close()
                   isexternLinkT = True
@@ -629,8 +650,8 @@ for course in courses:
                       #this should not heppend
                       #mh maybe continue ?  
             
-     
-               webfileTrapurl = webFileTrap.geturl().split('/')[-1].split('?')[0].encode('ascii', 'ignore').replace('/', '|').replace('\\', '|').replace(' ', '_')
+               webfileTrapurl = decodeFilename(webFileTrap.geturl().split('/')[-1].split('?')[0])
+               # webfileTrapurl = webFileTrap.geturl().split('/')[-1].split('?')[0].encode('ascii', 'ignore').replace('/', '|').replace('\\', '|').replace(' ', '_')
     
                saveFile(webfileTrapurl, sub_dir, webFileTrapContent, webFileTrap, hrefT)
 
