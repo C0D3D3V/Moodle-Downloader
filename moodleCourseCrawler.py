@@ -227,7 +227,7 @@ def decodeFilename(fileName):
 
 
 def crawlCourses(searchIn, ebene = 0, leftlinks = 0):
-   log("Now in Levle: " + str(ebene))
+   log("Now in level: " + str(ebene))
          
    #Lookup in the Moodle source if it is standard (moodlePath/my/ are my courses)
    try:
@@ -244,17 +244,17 @@ def crawlCourses(searchIn, ebene = 0, leftlinks = 0):
          loginStatus = checkLoginStatus(CoursesContents) 
       except Exception:
          log("Connection lost! It is not possible to connect to moodle!", 3)
-         continue
+         return
             
       if loginStatus == 0:
-         continue
+         return
       elif loginStatus == 2:
          log("Recheck Course: '" + searchIn + "'", 4)
          try:
             responseCourses = urllib2.urlopen(searchIn, timeout=10)
          except Exception:
             log("Connection lost! Course does not exist!", 3)
-            continue
+            return
          
          CoursesContents = donwloadFile(responseCourses)
           
@@ -282,7 +282,7 @@ def crawlCourses(searchIn, ebene = 0, leftlinks = 0):
    
    
    for catergory_string in courseCategoryList:
-      log("Left links: " + str(leftlinks) + " in level: " + ebene, 1)
+      log("Links to crawl: " + str(leftlinks) + ". Now in level: " + str(ebene), 1)
       categoryLink = catergory_string.find("a")
       if not categoryLink is None:
          category_name = decodeFilename(categoryLink.text).strip("-")
@@ -291,16 +291,21 @@ def crawlCourses(searchIn, ebene = 0, leftlinks = 0):
          crawlCourses(category_link, ebene + 1, leftlinks)
       leftlinks -= 1
 
-   externalLinkWriter = io.open(root_directory + "courses.log", 'ab')
    for course_string in courseNameList:
       courseLink = course_string.find("a")
       if not courseLink is None:
          course_name = decodeFilename(courseLink.text).strip("-")
          course_link = courseLink.get('href')
          log("Found Course: " + course_name + " (" + course_link + ")") 
-         externalLinkWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " " + course_name + ": "+  course_link + "\n")
+         global courselogFile
 
-   externalLinkWriter.close()
+         if not course_link in courselogFile: 
+            externalLinkWriter = io.open(courseLinkFile, 'ab')
+            externalLinkWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " " + course_name + ": "+  course_link + "\n")
+            externalLinkWriter.close()
+            courselogFileReader = io.open(courseLinkFile, 'rb')
+            courselogFile = courselogFileReader.read()
+            courselogFileReader.close()
    
    return
 
@@ -317,13 +322,14 @@ conf.read(os.path.join(project_dir, 'config.ini'))
 root_directory = checkQuotationMarks(conf.get("dirs", "root_dir"))
 username = checkQuotationMarks(conf.get("auth", "username"))
 password = checkQuotationMarks(conf.get("auth", "password"))
+loglevel = checkQuotationMarks(conf.get("crawl", "loglevel"))
 crawlcoursesink = checkQuotationMarks(conf.get("crawl", "crawlcoursesink"))
 
 
 authentication_url = addSlashIfNeeded(checkQuotationMarks(conf.get("auth", "url")))
 
   
-if not crawlcoursesink.startwith(course):
+if not crawlcoursesink.startswith("course"):
    log("Link for crawling Courses do not start with 'course'. This seems not to be a correkt link.")
    exit(1)
 
@@ -340,7 +346,7 @@ payload = {
 }
 
 
-crawlHistoryFile = root_directory + ".crawlhistory.log" 
+courseLinkFile = root_directory + "courselinks.log" 
 
 data = urllib.urlencode(payload)
 
@@ -390,19 +396,16 @@ if mainpageURL.startswith("http://"):
 
 domainMoodle = domainMoodle.split("/")[0]
  
- #create necessary stuff
-if not os.path.isfile(crawlHistoryFile):
-   logFileWriter = open(crawlHistoryFile, 'ab')
-   logFileWriter.close()
-   
-logFileReader = open(crawlHistoryFile, 'rb')
-logFile = logFileReader.read()
-logFileReader.close()
-
- 
-  
+ #create necessary stuff 
 
 courses = []
+if not os.path.isfile(courseLinkFile):
+   courselogFileReader = io.open(courseLinkFile, 'ab') 
+   courselogFileReader.close()
+
+courselogFileReader = io.open(courseLinkFile, 'rb')
+courselogFile = courselogFileReader.read()
+courselogFileReader.close()
 
 if not os.path.isdir(root_directory):
    os.makedirs(root_directory)    
