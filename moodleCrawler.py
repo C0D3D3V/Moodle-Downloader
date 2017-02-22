@@ -507,13 +507,30 @@ for course in courses:
         isexternlink = False
 
         if not domainMoodle in hrefCourseFile:
-           log("This is an external link. I will store it in the 'externel-links.log' file", 2)
+           log("This is an external link.", 2)
            #log("I will try to find more links on the external page! This will fail maybe.", 4) 
            if not os.path.isdir(current_dir):
               os.makedirs(current_dir)   
-           externalLinkWriter = io.open(current_dir + "externel-links.log", 'ab')
-           externalLinkWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " "+ hrefCourseFile + "\n")
-           externalLinkWriter.close()
+
+           if os.path.isfile(current_dir + "external-links.log"):
+              externalLinkReadeer = io.open(current_dir + "external-links.log", 'rb')
+              externallinks = externalLinkReadeer.read()
+              externalLinkReadeer.close()
+              if not hrefCourseFile in externallinks:
+                 log("I will store it in the 'external-links.log' file.", 4)
+                 externalLinkWriter = io.open(current_dir + "external-links.log", 'ab')
+                 externalLinkWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " "+ hrefCourseFile + "\n")
+                 externalLinkWriter.close()
+              else:
+                 log("This link was stored in the 'external-links.log' file earlier.", 5)
+
+           else:
+              log("I will store it in the 'external-links.log' file.", 4)
+              externalLinkWriter = io.open(current_dir + "external-links.log", 'ab')
+              externalLinkWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " "+ hrefCourseFile + "\n")
+              externalLinkWriter.close()
+ 
+
            isexternlink = True
            if downloadExternals == "false":
               log("Ups this is an external link. I do not crawl external links. Change the settings if you want to crawl external links.", 3)
@@ -613,13 +630,30 @@ for course in courses:
                isexternLinkT = False
    
                if not domainMoodle in hrefT: 
-                  log("This is an external link. I will store it in the 'externel-links.log' file", 4)
+                  log("This is an external link.", 4)
+
 
                   if not os.path.isdir(sub_dir):
                      os.makedirs(sub_dir)    
-                  externalLinkWriter = io.open(sub_dir + "externel-links.log", 'ab')
-                  externalLinkWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " "+ hrefT + "\n")
-                  externalLinkWriter.close()
+
+                  if os.path.isfile(sub_dir + "external-links.log"):
+                     externalLinkReadeer = io.open(sub_dir + "external-links.log", 'rb')
+                     externallinks = externalLinkReadeer.read()
+                     externalLinkReadeer.close()
+                     if not hrefT in externallinks: 
+                        log("I will store it in the 'external-links.log' file", 4)
+                        externalLinkWriter = io.open(sub_dir + "external-links.log", 'ab')
+                        externalLinkWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " "+ hrefT + "\n")
+                        externalLinkWriter.close()
+                     else:
+                        log("This link was stored in the 'external-links.log' file earlier.", 5)
+       
+                  else: 
+                     log("I will store it in the 'external-links.log' file", 4)
+                     externalLinkWriter = io.open(sub_dir + "external-links.log", 'ab')
+                     externalLinkWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " "+ hrefT + "\n")
+                     externalLinkWriter.close()
+
                   isexternLinkT = True
                   if downloadExternals == "false":
                      log("Ups this is an external link. I do not crawl external links. Change the settings if you want to crawl external links.", 3)
