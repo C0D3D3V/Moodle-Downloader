@@ -296,10 +296,11 @@ def crawlCourses(searchIn, ebene = 0, leftlinks = 0):
       if not courseLink is None:
          course_name = decodeFilename(courseLink.text).strip("-")
          course_link = courseLink.get('href')
-         log("Found Course: " + course_name + " (" + course_link + ")") 
+         
          global courselogFile
 
          if not course_link in courselogFile: 
+            log("Found new Course: " + course_name + " (" + course_link + ")") 
             externalLinkWriter = io.open(courseLinkFile, 'ab')
             externalLinkWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " " + course_name + ": "+  course_link + "\n")
             externalLinkWriter.close()
@@ -414,8 +415,6 @@ crawlCourses(mainpageURL + crawlcoursesink)  #"course/index.php"
  
   
 #blockCourse = True
- 
- 
- 
+  
 
 log("Update Complete")
