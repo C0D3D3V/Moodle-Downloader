@@ -233,7 +233,7 @@ def checkLoginStatus(pageContent):
          except Exception as e:
             raise NotGoodErrror(e)
           
-         LoginContents = responseLogin.read()
+         LoginContents = donwloadFile(responseLogin)
           
           
          if "errorcode=" in responseLogin.geturl():
@@ -315,7 +315,7 @@ try:
 except Exception:
    log("Connection lost! It is not possible to connect to moodle!")
    exit(1)
-LoginContents = responseLogin.read()
+LoginContents = donwloadFile(responseLogin)
  
 if "errorcode=" in responseLogin.geturl():
     log("Cannot login. Check your login data.")
@@ -366,7 +366,7 @@ try:
 except Exception:
    log("Connection lost! It is not possible to connect to moodle!")
    exit(1)
-CoursesContents = responseCourses.read()
+CoursesContents = donwloadFile(responseCourses)
 
 
 
@@ -419,7 +419,7 @@ for course in courses:
        log("Connection lost! Course does not exist!", 2)
        continue
 
-    CourseLinkContent = responseCourseLink.read()
+    CourseLinkContent = donwloadFile(responseCourseLink)
 
          
 
@@ -440,7 +440,7 @@ for course in courses:
              log("Connection lost! Course does not exist!", 3)
              continue
      
-          CourseLinkContent = responseCourseLink.read()
+          CourseLinkContent = donwloadFile(responseCourseLink)
           
        #elif loginStatus == 3:
           #this should not heppend
@@ -458,7 +458,16 @@ for course in courses:
        logFileReader.close()
 
  
-    course_links = CourseSoup.find(id="region-main").find_all('a')
+    course_links_Soup = CourseSoup.find(id="region-main")
+
+
+ 
+    if course_links_Soup is None:
+       log("Unable detect a Course")  #Maybe save the page standalone
+       continue
+   
+ 
+    course_links = course_links_Soup.find_all('a')
 
 
     current_dir = root_directory + course[0] + "/"
@@ -622,7 +631,7 @@ for course in courses:
                   log("Connection lost! File does not exist!", 3)
                   continue
     
-              # webFileTrapContent = webFileTrap.read()
+              # webFileTrapContent = donwloadFile(webFileTrap)
    
                
                webFileTrapContent = donwloadFile(webFileTrap)   
