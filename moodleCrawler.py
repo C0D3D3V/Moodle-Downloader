@@ -16,7 +16,6 @@
 #   limitations under the License.
 
 
-
 import cookielib
 import urllib2
 import urllib
@@ -36,19 +35,19 @@ from ConfigParser import ConfigParser
 
 try:
    from bs4 import BeautifulSoup
-except Exception, e:
+except Exception:
    print("Module BeautifulSoup4 is missing!")
    exit(1)
 
 try:
    from colorama import init
-except Exception, e:
+except Exception:
    print("Module Colorama is missing!")
    exit(1)
 
 try:
    from termcolor import colored
-except Exception, e:
+except Exception:
    print("Module Termcolor is missing!")
    exit(1)
 
@@ -96,6 +95,9 @@ def addSlashIfNeeded(settingString):
       settingString = settingString + "/"
    return settingString
 
+
+def normPath(pathSring):
+   return os.path.normpath(pathSring)
 
 #Log levels:
 # - Level 0: Minimal Information + small Errors
@@ -173,7 +175,8 @@ def saveFile(webFileFilename, pathToSave, webFileContent, webFileResponse, webFi
    if webFileFilename.split('.')[-1] == webFileFilename:
       webFileFilename = webFileFilename + ".html"
 
-   file_name = pathToSave + webFileFilename
+
+   file_name = normPath(addSlashIfNeeded(pathToSave) + webFileFilename)
 
    if file_name[-4:] == ".php":
       file_name = file_name[:len(file_name) - 4] + ".html"
@@ -273,7 +276,7 @@ conf.read(os.path.join(project_dir, 'config.ini'))
  
 
 
-root_directory = checkQuotationMarks(conf.get("dirs", "root_dir"))
+root_directory = normPath(checkQuotationMarks(conf.get("dirs", "root_dir")))
 username = checkQuotationMarks(conf.get("auth", "username"))
 password = checkQuotationMarks(conf.get("auth", "password"))
 crawlforum = checkQuotationMarks(conf.get("crawl", "forum")) #/forum/
@@ -288,7 +291,7 @@ authentication_url = checkQuotationMarks(conf.get("auth", "url"))
 
 cj = cookielib.CookieJar()
 opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
-opener.addheaders = [('User-agent', 'HeyThanksForWatchingThisAgenet')]
+opener.addheaders = [('User-agent', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36')]
 urllib2.install_opener(opener)
 
 
@@ -310,7 +313,7 @@ payload = {
 }
 
 
-crawlHistoryFile = root_directory + ".crawlhistory.log" 
+crawlHistoryFile = normPath(addSlashIfNeeded(root_directory)+ ".crawlhistory.log")
 
 data = urllib.urlencode(payload)
 
@@ -319,14 +322,22 @@ log("Moodle Crawler started working.")
 
 # Connection established?
 log("Try to login...", 2)
+log("Authentication url: '" + authentication_url + "'", 3)
+log("Username: '" + username + "'", 3)
+log("Password: '" + password + "'", 3)
+log("Root directory: '" + root_directory + "'", 3)
+
+
 
 req = urllib2.Request(authentication_url, data)
 #response = urllib2.urlopen(req)
 try:
    responseLogin = urllib2.urlopen(req, timeout=10)
-except Exception:
+except Exception as e:
    log("Connection lost! It is not possible to connect to login page!")
+   log(e, 3)
    exit(1)
+   
 LoginContents = donwloadFile(responseLogin)
  
 if "errorcode=" in responseLogin.geturl():
@@ -488,7 +499,7 @@ for course in courses:
     course_links = course_links_Soup.find_all('a')
 
 
-    current_dir = root_directory + course[0] + "/"
+    current_dir = normPath(addSlashIfNeeded(root_directory) + course[0] )
     for link in course_links:
         hrefCourseFile = link.get('href')
 
@@ -527,27 +538,40 @@ for course in courses:
         if not domainMoodle in hrefCourseFile:
            log("This is an external link.", 2)
            #log("I will try to find more links on the external page! This will fail maybe.", 4) 
+           
            if not os.path.isdir(current_dir):
               os.makedirs(current_dir)   
+           
+           externalLinkPath = normPath(addSlashIfNeeded(current_dir) + "external-links.log")
+          
 
-           if os.path.isfile(current_dir + "external-links.log"):
-              externalLinkReadeer = io.open(current_dir + "external-links.log", 'rb')
+           if os.path.isfile(externalLinkPath):
+              externalLinkReadeer = io.open(externalLinkPath, 'rb')
               externallinks = externalLinkReadeer.read()
               externalLinkReadeer.close()
               if not hrefCourseFile in externallinks:
-                 log("I will store it in the '" + current_dir + "external-links.log' file.", 4)
-                 externalLinkWriter = io.open(current_dir + "external-links.log", 'ab')
+                 log("I will store it in the '" + externalLinkPath + "' file.", 4)
+                 externalLinkWriter = io.open(externalLinkPath, 'ab')
                  externalLinkWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " "+ hrefCourseFile + "\n")
                  externalLinkWriter.close()
+                 
+
               else:
-                 log("This link was stored in the '" + current_dir + "external-links.log' file earlier.", 5)
+                 log("This link was stored in the '" + externalLinkPath + "' file earlier.", 5)
+
 
            else:
-              log("I will store it in the '" + current_dir + "external-links.log' file.", 4)
-              externalLinkWriter = io.open(current_dir + "external-links.log", 'ab')
+              log("I will store it in the '" + externalLinkPath + "' file.", 4)
+              externalLinkWriter = io.open(externalLinkPath, 'ab')
               externalLinkWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " "+ hrefCourseFile + "\n")
               externalLinkWriter.close()
  
+           logFileWriter = io.open(crawlHistoryFile, 'ab')
+           logFileWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " External: "+ hrefCourseFile + " saved to '" + externalLinkPath + "'\n")
+           logFileWriter.close()
+           logFileReader = io.open(crawlHistoryFile, 'rb')
+           logFile = logFileReader.read()
+           logFileReader.close()
 
            isexternlink = True
            if downloadExternals == "false":
@@ -620,7 +644,7 @@ for course in courses:
 
              myTitle = decodeFilename(myTitle).replace(course[0], '').strip("-")
 
-             sub_dir = root_directory + course[0] + "/" + myTitle + "/" 
+             sub_dir = normPath( addSlashIfNeeded(root_directory) + course[0] + "/" + myTitle )
    
              for traplink in trap_links:
                hrefT = traplink.get('href')
@@ -654,23 +678,32 @@ for course in courses:
                   if not os.path.isdir(sub_dir):
                      os.makedirs(sub_dir)    
 
-                  if os.path.isfile(sub_dir + "external-links.log"):
-                     externalLinkReadeer = io.open(sub_dir + "external-links.log", 'rb')
+                  externalLinkPath = normPath(addSlashIfNeeded(sub_dir) + "external-links.log")
+
+                  if os.path.isfile(externalLinkPath):
+                     externalLinkReadeer = io.open(externalLinkPath, 'rb')
                      externallinks = externalLinkReadeer.read()
                      externalLinkReadeer.close()
                      if not hrefT in externallinks: 
-                        log("I will store it in the '" + sub_dir + "external-links.log' file", 4)
-                        externalLinkWriter = io.open(sub_dir + "external-links.log", 'ab')
+                        log("I will store it in the '" + externalLinkPath + "' file", 4)
+                        externalLinkWriter = io.open(externalLinkPath, 'ab')
                         externalLinkWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " "+ hrefT + "\n")
                         externalLinkWriter.close()
                      else:
-                        log("This link was stored in the '" + sub_dir + "external-links.log' file earlier.", 5)
+                        log("This link was stored in the '" + externalLinkPath + "' file earlier.", 5)
        
                   else: 
-                     log("I will store it in the '" + sub_dir + "external-links.log' file", 4)
-                     externalLinkWriter = io.open(sub_dir + "external-links.log", 'ab')
+                     log("I will store it in the '" + externalLinkPath + "' file", 4)
+                     externalLinkWriter = io.open(externalLinkPath, 'ab')
                      externalLinkWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " "+ hrefT + "\n")
                      externalLinkWriter.close()
+
+                  logFileWriter = io.open(crawlHistoryFile, 'ab')
+                  logFileWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " External: "+ hrefCourseFile + " saved to '" + externalLinkPath + "'\n")
+                  logFileWriter.close()
+                  logFileReader = io.open(crawlHistoryFile, 'rb')
+                  logFile = logFileReader.read()
+                  logFileReader.close()
 
                   isexternLinkT = True
                   if downloadExternals == "false":

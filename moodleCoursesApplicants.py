@@ -331,7 +331,8 @@ authentication_url = addSlashIfNeeded(checkQuotationMarks(conf.get("auth", "url"
 
 cj = cookielib.CookieJar()
 opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
-opener.addheaders = [('User-agent', 'HeyThanksForWatchingThisAgenet')]
+opener.addheaders = [('User-agent', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36')]
+
 urllib2.install_opener(opener)
 
 
