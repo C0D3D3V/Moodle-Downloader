@@ -73,6 +73,10 @@ def addSlashIfNeeded(settingString):
       settingString = settingString + "/"
    return settingString
 
+def addBegSlashIfNeeded(settingString):
+   if not settingString is None and not settingString[0] == "/":
+      settingString =  "/" + settingString
+   return settingString
 
 #Log levels:
 # - Level 0: Minimal Information + small Errors
@@ -220,7 +224,7 @@ def crawlCourses(searchIn, ebene = 0, leftlinks = 0):
       try:
          loginStatus = checkLoginStatus(CoursesContents) 
       except Exception:
-         log("Connection lost! It is not possible to connect to moodle!", 3)
+         log("Connection lost! It is not possible to connect to course list page!", 3)
          return
             
       if loginStatus == 0:
@@ -301,16 +305,12 @@ root_directory = checkQuotationMarks(conf.get("dirs", "root_dir"))
 username = checkQuotationMarks(conf.get("auth", "username"))
 password = checkQuotationMarks(conf.get("auth", "password"))
 loglevel = checkQuotationMarks(conf.get("crawl", "loglevel"))
-crawlcoursesink = checkQuotationMarks(conf.get("crawl", "crawlcoursesink"))
+crawlcoursesink = addBegSlashIfNeeded(checkQuotationMarks(conf.get("crawl", "crawlcoursesink")))
 
 
-authentication_url = addSlashIfNeeded(checkQuotationMarks(conf.get("auth", "url")))
+authentication_url = checkQuotationMarks(conf.get("auth", "url"))
 
   
-if not crawlcoursesink.startswith("course"):
-   log("Link for crawling Courses do not start with 'course'. This seems not to be a correkt link.")
-   exit(1)
-
 
 cj = cookielib.CookieJar()
 opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
@@ -327,6 +327,22 @@ payload = {
 courseLinkFile = root_directory + "courselinks.log" 
 
 data = urllib.urlencode(payload)
+
+
+
+moodlePath = ""
+useSpecpath = False
+
+if authentication_url.split('?')[0][-16:] == "/login/index.php":
+   moodlePath = addSlashIfNeeded(authentication_url.split('?')[0][:-16])
+else:
+   useSpecpath = True
+   log("This script will probably not work. Please use an authentication URL that ends with /login/index.php or contact the project owner.")
+
+
+if not crawlcoursesink.startswith("/course/index.php"):
+   log("This script will probably not work. Please use an course URL that starts with /course/index.php or contact the project owner.")
+
 
 
 log("Moodle Course Crawler started working.")
@@ -358,6 +374,15 @@ if LoginStatusConntent is None or ("Logout" not in str(LoginStatusConntent) and 
 log("Logged in!", 1)
  
  
+
+#Lookup in the Moodle source if it is standard (Domain + subfolder)
+mainpageURL = addSlashIfNeeded(responseLogin.geturl())
+ 
+ 
+if useSpecpath == False:
+   mainpageURL = moodlePath
+
+
  
  #create necessary stuff 
 

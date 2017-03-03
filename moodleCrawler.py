@@ -346,12 +346,9 @@ log("Logged in!", 1)
  
 
 #Lookup in the Moodle source if it is standard (Domain + subfolder)
-mainpageURL = responseLogin.geturl()
+mainpageURL = addSlashIfNeeded(responseLogin.geturl())
 
-domainMoodle = ""
-if not mainpageURL[-1] == "/":
-   mainpageURL = mainpageURL + "/" 
-
+domainMoodle = "" 
 if mainpageURL.startswith("https://"):
    domainMoodle = mainpageURL[8:]
 
