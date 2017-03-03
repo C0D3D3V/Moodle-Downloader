@@ -26,10 +26,10 @@ It is planed to build a script to login (and logout) from all courses on a moodl
 #### REQUIREMENTS
 
 - Python 2
-- Beautifulsoup - `sudo apt-get install python-beautifulsoup`
+- Beautifulsoup - `sudo apt-get install python-beautifulsoup` or `sudo pip install beautifulsoup4`
 - Colorama - `sudo pip install colorama`
 - Termcolor - `sudo pip install termcolor`
-- lxml or similar - `sudo pip install lmxl`
+- lxml or similar - `sudo pip install lmxl` or `easy_install lxml`
 
 ### EXTRAS
 
