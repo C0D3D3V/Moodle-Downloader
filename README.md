@@ -20,6 +20,9 @@ Set the following in the file `config.ini` before running the script
 All the files are stored in their respective directories inside the `root_dir` with the names as in moodle.
 
 
+It is planed to build a script to login (and logout) from all courses on a moodle platform. For the moment there is a script called `moodleCourseCrawler.py` that uses the `crawlcoursesink` option. This script only logs all courses on the platform.
+
+
 #### REQUIREMENTS
 
 - Python 2
