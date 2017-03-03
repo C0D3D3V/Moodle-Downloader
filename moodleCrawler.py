@@ -282,7 +282,7 @@ loglevel = checkQuotationMarks(conf.get("crawl", "loglevel"))
 downloadExternals = checkQuotationMarks(conf.get("crawl", "externallinks"))
 
 
-authentication_url = addSlashIfNeeded(checkQuotationMarks(conf.get("auth", "url")))
+authentication_url = checkQuotationMarks(conf.get("auth", "url"))
 
   
 
@@ -290,6 +290,18 @@ cj = cookielib.CookieJar()
 opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
 opener.addheaders = [('User-agent', 'HeyThanksForWatchingThisAgenet')]
 urllib2.install_opener(opener)
+
+
+
+moodlePath = ""
+useSpecpath = False
+
+if authentication_url.split('?')[0][-16:] == "/login/index.php":
+   moodlePath = addSlashIfNeeded(authentication_url.split('?')[0][:-16])
+else:
+   useSpecpath = True
+   log("This script will probably not work. Please use an authentication URL that ends with /login/index.php or contact the project owner.")
+
 
 
 payload = {
@@ -313,7 +325,7 @@ req = urllib2.Request(authentication_url, data)
 try:
    responseLogin = urllib2.urlopen(req, timeout=10)
 except Exception:
-   log("Connection lost! It is not possible to connect to moodle!")
+   log("Connection lost! It is not possible to connect to login page!")
    exit(1)
 LoginContents = donwloadFile(responseLogin)
  
@@ -348,6 +360,10 @@ if mainpageURL.startswith("http://"):
 
 domainMoodle = domainMoodle.split("/")[0]
  
+if useSpecpath == False:
+   mainpageURL = moodlePath
+
+
  #create necessary stuff
 if not os.path.isfile(crawlHistoryFile):
    logFileWriter = open(crawlHistoryFile, 'ab')
@@ -364,7 +380,7 @@ log("Searching Courses...", 2)
 try:
    responseCourses = urllib2.urlopen(mainpageURL + "my/", timeout=10)
 except Exception:
-   log("Connection lost! It is not possible to connect to moodle!")
+   log("Connection lost! It is not possible to connect to course page! At: " + mainpageURL)
    exit(1)
 CoursesContents = donwloadFile(responseCourses)
 
@@ -382,18 +398,22 @@ if CoursesContentsList is None:
    log("Unable to find courses")
    exit(1)
    
- 
-regexCourseName = re.compile('class="course_title">(.*?)</div>')
-course_list = regexCourseName.findall(str(CoursesContentsList))
+courseNameList = CoursesContentsList.find_all(class_="course_title")
+
+
+#regexCourseName = re.compile('class="course_title">(.*?)</div>')
+#course_list = regexCourseName.findall(str(CoursesContentsList))
 courses = []
 
 #blockCourse = True
 
-for course_string in course_list:
-    CourseTitleSoup = BeautifulSoup(course_string, "lxml")
-    aCourse = CourseTitleSoup.find('a')
+for course_string in courseNameList:
+    aCourse = course_string.find('a')
     #course_name = aCourse.text.encode('ascii', 'ignore').replace('/', '|').replace('\\', '|').replace(' ', '_').replace('.', '_')
-   
+    if aCourse is None:
+       log("No link to this course was found!", 3)
+       continue
+
     course_name = decodeFilename(aCourse.text).strip("-")
 
     course_link = aCourse.get('href')
@@ -411,7 +431,7 @@ for course in courses:
     #response1 = urllib2.urlopen(course[1], timeout=10)
    
 
-    log("Check Course: '" + course[0] + "'")
+    log("Check course: '" + course[0] + "'")
 
     try:
        responseCourseLink = urllib2.urlopen(course[1], timeout=10)
@@ -448,6 +468,7 @@ for course in courses:
 
        CourseSoup = BeautifulSoup(CourseLinkContent, "lxml") 
 
+ 
 
     if not course[1] in logFile:
        logFileWriter = open(crawlHistoryFile, 'ab')
@@ -517,15 +538,15 @@ for course in courses:
               externallinks = externalLinkReadeer.read()
               externalLinkReadeer.close()
               if not hrefCourseFile in externallinks:
-                 log("I will store it in the 'external-links.log' file.", 4)
+                 log("I will store it in the '" + current_dir + "external-links.log' file.", 4)
                  externalLinkWriter = io.open(current_dir + "external-links.log", 'ab')
                  externalLinkWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " "+ hrefCourseFile + "\n")
                  externalLinkWriter.close()
               else:
-                 log("This link was stored in the 'external-links.log' file earlier.", 5)
+                 log("This link was stored in the '" + current_dir + "external-links.log' file earlier.", 5)
 
            else:
-              log("I will store it in the 'external-links.log' file.", 4)
+              log("I will store it in the '" + current_dir + "external-links.log' file.", 4)
               externalLinkWriter = io.open(current_dir + "external-links.log", 'ab')
               externalLinkWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " "+ hrefCourseFile + "\n")
               externalLinkWriter.close()
@@ -641,15 +662,15 @@ for course in courses:
                      externallinks = externalLinkReadeer.read()
                      externalLinkReadeer.close()
                      if not hrefT in externallinks: 
-                        log("I will store it in the 'external-links.log' file", 4)
+                        log("I will store it in the '" + sub_dir + "external-links.log' file", 4)
                         externalLinkWriter = io.open(sub_dir + "external-links.log", 'ab')
                         externalLinkWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " "+ hrefT + "\n")
                         externalLinkWriter.close()
                      else:
-                        log("This link was stored in the 'external-links.log' file earlier.", 5)
+                        log("This link was stored in the '" + sub_dir + "external-links.log' file earlier.", 5)
        
                   else: 
-                     log("I will store it in the 'external-links.log' file", 4)
+                     log("I will store it in the '" + sub_dir + "external-links.log' file", 4)
                      externalLinkWriter = io.open(sub_dir + "external-links.log", 'ab')
                      externalLinkWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " "+ hrefT + "\n")
                      externalLinkWriter.close()

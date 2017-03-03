@@ -60,29 +60,6 @@ init()
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
-filesBySize = {}
-
-def walker(arg, dirname, fnames):
-    d = os.getcwd()
-    os.chdir(dirname)
-    try:
-        fnames.remove('Thumbs')
-    except ValueError:
-        pass
-    for f in fnames:
-        if not os.path.isfile(f):
-            continue
-        size = os.stat(f)[stat.ST_SIZE]
-        if size < 100:
-            continue
-        if filesBySize.has_key(size):
-            a = filesBySize[size]
-        else:
-            a = []
-            filesBySize[size] = a
-        a.append(os.path.join(dirname, f))
-    os.chdir(d)
-
 def checkQuotationMarks(settingString):
    if not settingString is None and settingString[0] == "\"" and settingString[-1] == "\"":
       settingString = settingString[1:-1]
@@ -381,25 +358,9 @@ if LoginStatusConntent is None or ("Logout" not in str(LoginStatusConntent) and 
 log("Logged in!", 1)
  
  
-
-#Lookup in the Moodle source if it is standard (Domain + subfolder)
-mainpageURL = responseLogin.geturl()
-
-domainMoodle = ""
-if not mainpageURL[-1] == "/":
-   mainpageURL = mainpageURL + "/" 
-
-if mainpageURL.startswith("https://"):
-   domainMoodle = mainpageURL[8:]
-
-if mainpageURL.startswith("http://"):
-   domainMoodle = mainpageURL[7:]
-
-domainMoodle = domainMoodle.split("/")[0]
  
  #create necessary stuff 
 
-courses = []
 if not os.path.isfile(courseLinkFile):
    courselogFileReader = io.open(courseLinkFile, 'ab') 
    courselogFileReader.close()
