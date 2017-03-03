@@ -29,6 +29,7 @@ It is planed to build a script to login (and logout) from all courses on a moodl
 - Beautifulsoup - `sudo apt-get install python-beautifulsoup`
 - Colorama - `sudo pip install colorama`
 - Termcolor - `sudo pip install termcolor`
+- lxml or similar - `sudo pip install lmxl`
 
 ### EXTRAS
 
