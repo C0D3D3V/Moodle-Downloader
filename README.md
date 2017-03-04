@@ -16,7 +16,7 @@ Set the following in the file `config.ini` before running the script
 - `loglevel` : Sets the level of logging (0 - less information / 5 - all information)
 - `externallinks` : If external links should get crawled
 - `crawlcoursesink` : Moodle Course Crawler startpoint (Default course/index.php = all Courses) 
-- `colors` : If colors should be used
+- `colors` : If colors should be used (For windows use Cmder to display colors correct. http://cmder.net/)
 
 All the files are stored in their respective directories inside the `root_dir` with the names as in moodle.
 
