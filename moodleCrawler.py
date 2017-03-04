@@ -35,19 +35,19 @@ from ConfigParser import ConfigParser
 
 try:
    from bs4 import BeautifulSoup
-except Exception:
+except Exception as e:
    print("Module BeautifulSoup4 is missing!")
    exit(1)
 
 try:
    from colorama import init
-except Exception:
+except Exception as e:
    print("Module Colorama is missing!")
    exit(1)
 
 try:
    from termcolor import colored
-except Exception:
+except Exception as e:
    print("Module Termcolor is missing!")
    exit(1)
 
@@ -138,7 +138,7 @@ def donwloadFile(downloadFileResponse):
    try:
        total_size = downloadFileResponse.info().getheader('Content-Length').strip()
        header = True
-   except Exception:
+   except Exception as e:
        log("No Content-Length available.", 5)
        header = False # a response doesn't always include the "Content-Length" header
           
@@ -148,7 +148,7 @@ def donwloadFile(downloadFileResponse):
    bytes_so_far = 0
         
    while True:
-       downloadFileContentBuffer = downloadFileResponse.read(8192)
+       downloadFileContentBuffer = downloadFileResponse.read(81924)
        if not downloadFileContentBuffer: 
            break
            
@@ -335,13 +335,14 @@ try:
    responseLogin = urllib2.urlopen(req, timeout=10)
 except Exception as e:
    log("Connection lost! It is not possible to connect to login page!")
-   log(e, 3)
+   log("Exception details: " + str(e), 5)
    exit(1)
    
 LoginContents = donwloadFile(responseLogin)
  
 if "errorcode=" in responseLogin.geturl():
     log("Cannot login. Check your login data.")
+    log("Full url: " + responseLogin.geturl(), 5)
     exit(1)
 
 #Lookup in the Moodle source if it is standard   ("Logout" on every Page)
@@ -349,6 +350,7 @@ LoginSoup = BeautifulSoup(LoginContents, "lxml")
 LoginStatusConntent = LoginSoup.find(class_="logininfo")
 if LoginStatusConntent is None or ("Logout" not in str(LoginStatusConntent) and "logout" not in str(LoginStatusConntent)): 
    log("Cannot connect to moodle or Moodle has changed. Crawler is not logged in. Check your login data.") 
+   log("Full page: " + str(LoginStatusConntent), 5)
    exit(1)
 
 
@@ -387,8 +389,9 @@ log("Searching Courses...", 2)
 #Lookup in the Moodle source if it is standard (moodlePath/my/ are my courses)
 try:
    responseCourses = urllib2.urlopen(mainpageURL + "my/", timeout=10)
-except Exception:
+except Exception as e:
    log("Connection lost! It is not possible to connect to course page! At: " + mainpageURL)
+   log("Exception details: " + str(e), 5)
    exit(1)
 CoursesContents = donwloadFile(responseCourses)
 
@@ -404,6 +407,7 @@ CoursesContentsList = CoursesContentsSoup.find(id="region-main")
  
 if CoursesContentsList is None:
    log("Unable to find courses")
+   log("Full page: " + CoursesContents, 5)
    exit(1)
    
 courseNameList = CoursesContentsList.find_all(class_="course_title")
@@ -420,6 +424,7 @@ for course_string in courseNameList:
     #course_name = aCourse.text.encode('ascii', 'ignore').replace('/', '|').replace('\\', '|').replace(' ', '_').replace('.', '_')
     if aCourse is None:
        log("No link to this course was found!", 3)
+       log("Full page: " + course_string, 5)
        continue
 
     course_name = decodeFilename(aCourse.text).strip("-")
@@ -432,7 +437,10 @@ for course_string in courseNameList:
     courses.append([course_name, course_link])
     log("Found Course: '" + course_name + "'", 2)
 
-
+if len(courses) == 0:
+   log("Unable to find courses")
+   log("Full page: " + CoursesContentsList, 5)
+   
 
 
 for course in courses:
@@ -443,8 +451,9 @@ for course in courses:
 
     try:
        responseCourseLink = urllib2.urlopen(course[1], timeout=10)
-    except Exception:
+    except Exception as e:
        log("Connection lost! Course does not exist!", 2)
+       log("Exception details: " + str(e), 5)
        continue
 
     CourseLinkContent = donwloadFile(responseCourseLink)
@@ -454,8 +463,9 @@ for course in courses:
     if "text/html" in responseCourseLink.info().getheader('Content-Type'): 
        try:
           loginStatus = checkLoginStatus(CourseLinkContent) 
-       except Exception:
+       except Exception as e:
           log("Connection lost! It is not possible to connect to moodle!", 3)
+          log("Exception details: " + str(e), 5)
           continue
 
        if loginStatus == 0:
@@ -464,8 +474,9 @@ for course in courses:
           log("Recheck Course: '" + course[0] + "'", 4)
           try:
              responseCourseLink = urllib2.urlopen(course[1], timeout=10)
-          except Exception:
+          except Exception as e:
              log("Connection lost! Course does not exist!", 3)
+             log("Exception details: " + str(e), 5)
              continue
      
           CourseLinkContent = donwloadFile(responseCourseLink)
@@ -493,6 +504,7 @@ for course in courses:
  
     if course_links_Soup is None:
        log("Unable detect a Course")  #Maybe save the page standalone
+       log("Full page: " + CourseSoup, 5)
        continue
    
  
@@ -505,6 +517,7 @@ for course in courses:
 
         if hrefCourseFile is None or hrefCourseFile == "":
              log("There went something wrong, this is an empty link.", 3)
+             log("Full link: " + link.get('href'), 5)
              continue
  
 
@@ -586,8 +599,9 @@ for course in courses:
         #webFileCourseFile = urllib2.urlopen(hrefCourseFile, timeout=10)
         try:
            webFileCourseFile = urllib2.urlopen(hrefCourseFile, timeout=10)
-        except Exception:
+        except Exception as e:
            log("Connection lost! Link does not exist!", 3)
+           log("Exception details: " + str(e), 5)
            continue
         
         webFileContent = donwloadFile(webFileCourseFile)
@@ -598,8 +612,9 @@ for course in courses:
               try:
                  loginStatus = checkLoginStatus(webFileContent)
                  
-              except Exception:
+              except Exception as e:
                  log("Connection lost! It is not possible to connect to moodle!", 3)
+                 log("Exception details: " + str(e), 5)
                  continue
 
               if loginStatus == 0:
@@ -607,8 +622,9 @@ for course in courses:
               elif loginStatus == 2:
                  try:
                     webFileCourseFile = urllib2.urlopen(hrefCourseFile, timeout=10)
-                 except Exception:
+                 except Exception as e:
                     log("Connection lost! Link does not exist!", 3)
+                    log("Exception details: " + str(e), 5)
                     continue
                  
                      
@@ -712,8 +728,9 @@ for course in courses:
    
                try:
                   webFileTrap = urllib2.urlopen(hrefT, timeout=10)
-               except Exception:
+               except Exception as e:
                   log("Connection lost! File does not exist!", 3)
+                  log("Exception details: " + str(e), 5)
                   continue
     
               # webFileTrapContent = donwloadFile(webFileTrap)
@@ -725,8 +742,9 @@ for course in courses:
                   try:
                      loginStatus = checkLoginStatus(webFileTrapContent)
                      
-                  except Exception:
+                  except Exception as e:
                      log("Connection lost! It is not possible to connect to moodle!", 3)
+                     log("Exception details: " + str(e), 5)
                      continue
 
                   if loginStatus == 0:
@@ -734,8 +752,9 @@ for course in courses:
                   elif loginStatus == 2:
                      try:
                        webFileTrap = urllib2.urlopen(hrefT, timeout=10)
-                     except Exception:
+                     except Exception as e:
                        log("Connection lost! Link does not exist!", 3)
+                       log("Exception details: " + str(e), 5)
                        continue
                        
                      webFileTrapContent = donwloadFile(webFileTrap)  
