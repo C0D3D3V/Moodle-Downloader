@@ -33,26 +33,70 @@ import sys
 from datetime import datetime
 from ConfigParser import ConfigParser
 
+
+
+def checkQuotationMarks(settingString):
+   if not settingString is None and settingString[0] == "\"" and settingString[-1] == "\"":
+      settingString = settingString[1:-1]
+   if settingString is None:
+      settingString = ""
+   return settingString
+ 
+
+def addSlashIfNeeded(settingString):
+   if not settingString is None and not settingString[-1] == "/":
+      settingString = settingString + "/"
+   return settingString
+
+
+def normPath(pathSring):
+   return os.path.normpath(pathSring)
+
+def removeSpaces(pathString):
+   return pathString.replace(" ", "")
+
+
+
+conf = ConfigParser()
+project_dir = os.path.dirname(os.path.abspath(__file__))
+conf.read(os.path.join(project_dir, 'config.ini'))
+  
+
+root_directory = normPath(checkQuotationMarks(conf.get("dirs", "root_dir")))
+username = checkQuotationMarks(conf.get("auth", "username"))
+password = checkQuotationMarks(conf.get("auth", "password"))
+crawlforum = checkQuotationMarks(conf.get("crawl", "forum")) #/forum/
+usehistory = checkQuotationMarks(conf.get("crawl", "history")) #do not recrawl
+loglevel = checkQuotationMarks(conf.get("crawl", "loglevel"))
+downloadExternals = checkQuotationMarks(conf.get("crawl", "externallinks"))
+
+
+authentication_url = checkQuotationMarks(conf.get("auth", "url"))
+useColors = checkQuotationMarks(conf.get("other", "colors"))
+
+
+
 try:
    from bs4 import BeautifulSoup
 except Exception as e:
    print("Module BeautifulSoup4 is missing!")
    exit(1)
 
-try:
-   from colorama import init
-except Exception as e:
-   print("Module Colorama is missing!")
-   exit(1)
+if useColors == "true":
+   try:
+      from colorama import init
+   except Exception as e:
+      print("Module Colorama is missing!")
+      exit(1)
+   
+   try:
+      from termcolor import colored
+   except Exception as e:
+      print("Module Termcolor is missing!")
+      exit(1)
 
-try:
-   from termcolor import colored
-except Exception as e:
-   print("Module Termcolor is missing!")
-   exit(1)
-
-# use Colorama to make Termcolor work on Windows too
-init()
+   # use Colorama to make Termcolor work on Windows too
+   init()
 
 
 #utf8 shit
@@ -82,23 +126,6 @@ def walker(arg, dirname, fnames):
         a.append(os.path.join(dirname, f))
     os.chdir(d)
 
-def checkQuotationMarks(settingString):
-   if not settingString is None and settingString[0] == "\"" and settingString[-1] == "\"":
-      settingString = settingString[1:-1]
-   if settingString is None:
-      settingString = ""
-   return settingString
- 
-
-def addSlashIfNeeded(settingString):
-   if not settingString is None and not settingString[-1] == "/":
-      settingString = settingString + "/"
-   return settingString
-
-
-def normPath(pathSring):
-   return os.path.normpath(pathSring)
-
 #Log levels:
 # - Level 0: Minimal Information + small Errors
 # - Level 1: More Information + Successes 
@@ -109,19 +136,35 @@ def normPath(pathSring):
 
  
 def log(logString, level=0):
-   if level <= int(loglevel):
-      if level == 0:
-         print(datetime.now().strftime('%H:%M:%S') + " " + logString)
-      elif level == 1:
-         print(colored(datetime.now().strftime('%H:%M:%S') + " " + logString, "green")) 
-      elif level == 2:
-         print(colored(datetime.now().strftime('%H:%M:%S') + " " + logString, "yellow"))
-      elif level == 3:
-         print(colored(datetime.now().strftime('%H:%M:%S') + " " + logString, "red"))
-      elif level == 4:
-         print(colored(datetime.now().strftime('%H:%M:%S') + " " + logString, "magenta"))
-      elif level == 5:
-         print(colored(datetime.now().strftime('%H:%M:%S') + " " + logString, "cyan"))
+   logString = logString.encode('utf-8')
+   if useColors == "true":
+      if level <= int(loglevel):
+         if level == 0:
+            print(datetime.now().strftime('%H:%M:%S') + " " + logString)
+         elif level == 1:
+            print(colored(datetime.now().strftime('%H:%M:%S') + " " + logString, "green"))
+         elif level == 2:
+            print(colored(datetime.now().strftime('%H:%M:%S') + " " + logString, "yellow"))
+         elif level == 3:
+            print(colored(datetime.now().strftime('%H:%M:%S') + " " + logString, "red"))
+         elif level == 4:
+            print(colored(datetime.now().strftime('%H:%M:%S') + " " + logString, "magenta"))
+         elif level == 5:
+            print(colored(datetime.now().strftime('%H:%M:%S') + " " + logString, "cyan"))
+   else:
+      if level <= int(loglevel):
+         if level == 0:
+            print(datetime.now().strftime('%H:%M:%S') + " " + logString)
+         elif level == 1:
+            print(datetime.now().strftime('%H:%M:%S') + " " + logString) 
+         elif level == 2:
+            print(datetime.now().strftime('%H:%M:%S') + " " + logString)
+         elif level == 3:
+            print(datetime.now().strftime('%H:%M:%S') + " " + logString)
+         elif level == 4:
+            print(datetime.now().strftime('%H:%M:%S') + " " + logString)
+         elif level == 5:
+            print(datetime.now().strftime('%H:%M:%S') + " " + logString)
 
 
 
@@ -199,8 +242,13 @@ def saveFile(webFileFilename, pathToSave, webFileContent, webFileResponse, webFi
           break
        ii += 1
      
-   
-   log("Creating new file: '" +  file_name + "'")
+   try:
+      log("Creating new file: '" +  file_name + "'")
+   except Exception as e:
+      log("Exception: " + str(e) + "    Lol   " +  pathToSave)
+      exit(1)
+
+
    pdfFile = io.open(file_name, 'wb')
    pdfFile.write(webFileContent)
    webFileResponse.close()
@@ -222,13 +270,15 @@ def saveFile(webFileFilename, pathToSave, webFileContent, webFileResponse, webFi
 
 def checkLoginStatus(pageContent):
    PageSoup = BeautifulSoup(pageContent, "lxml") 
-   LoginStatusConntent = PageSoup.find(class_="logininfo")
-   if not LoginStatusConntent is None:
+   #LoginStatusConntent = PageSoup.find(class_="logininfo")
+   LoginStatusConntent = PageSoup.select(".logininfo")
+
+   if not LoginStatusConntent is None or len(LoginStatusConntent) == 0:
    
       log("Checking login status.", 4)  
       #Lookup in the Moodle source if it is standard (login / log in on every page)
       #Is a relogin needed ? Try to figure out when relogin is needed.
-      if "Logout" not in str(LoginStatusConntent) and "logout" not in str(LoginStatusConntent):
+      if "Logout" not in str(LoginStatusConntent[-1]) and "logout" not in str(LoginStatusConntent[-1]):
          log("Try to relogin, connection maybe lost.", 3)
          
          try:
@@ -245,8 +295,10 @@ def checkLoginStatus(pageContent):
          
          #Lookup in the Moodle source if it is standard   ("Logout" on every Page)
          LoginSoup = BeautifulSoup(LoginContents, "lxml") 
-         LoginStatusConntent = LoginSoup.find(class_="logininfo")
-         if LoginStatusConntent is None or ("Logout" not in str(LoginStatusConntent) and "logout" not in str(LoginStatusConntent)):  
+         #LoginStatusConntent = LoginSoup.find(class_="logininfo")
+         LoginStatusConntent = PageSoup.select(".logininfo")
+        
+         if LoginStatusConntent is None or ("Logout" not in str(LoginStatusConntent[-1]) and "logout" not in str(LoginStatusConntent[-1])):  
              log("Cannot connect to moodle or Moodle has changed. Crawler is not logged in. Check your login data.", 3)
              return 0
            
@@ -270,24 +322,12 @@ def decodeFilename(fileName):
   return htmlDecode
 
 
-conf = ConfigParser()
-project_dir = os.path.dirname(os.path.abspath(__file__))
-conf.read(os.path.join(project_dir, 'config.ini'))
- 
 
 
-root_directory = normPath(checkQuotationMarks(conf.get("dirs", "root_dir")))
-username = checkQuotationMarks(conf.get("auth", "username"))
-password = checkQuotationMarks(conf.get("auth", "password"))
-crawlforum = checkQuotationMarks(conf.get("crawl", "forum")) #/forum/
-usehistory = checkQuotationMarks(conf.get("crawl", "history")) #do not recrawl
-loglevel = checkQuotationMarks(conf.get("crawl", "loglevel"))
-downloadExternals = checkQuotationMarks(conf.get("crawl", "externallinks"))
 
 
-authentication_url = checkQuotationMarks(conf.get("auth", "url"))
 
-  
+
 
 cj = cookielib.CookieJar()
 opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
@@ -347,10 +387,11 @@ if "errorcode=" in responseLogin.geturl():
 
 #Lookup in the Moodle source if it is standard   ("Logout" on every Page)
 LoginSoup = BeautifulSoup(LoginContents, "lxml") 
-LoginStatusConntent = LoginSoup.find(class_="logininfo")
-if LoginStatusConntent is None or ("Logout" not in str(LoginStatusConntent) and "logout" not in str(LoginStatusConntent)): 
+#LoginStatusConntent = LoginSoup.find(class_="logininfo")
+LoginStatusConntent = LoginSoup.select(".logininfo")
+if LoginStatusConntent is None or len(LoginStatusConntent) == 0 or ("Logout" not in str(LoginStatusConntent[-1]) and "logout" not in str(LoginStatusConntent[-1])): 
    log("Cannot connect to moodle or Moodle has changed. Crawler is not logged in. Check your login data.") 
-   log("Full page: " + str(LoginStatusConntent), 5)
+   log("Full page: " + str(LoginStatusConntent[-1]), 5)
    exit(1)
 
 
@@ -402,6 +443,7 @@ CoursesContentsSoup = BeautifulSoup(CoursesContents, "lxml")
 
 CoursesContentsList = CoursesContentsSoup.find(id="region-main")
 
+
 #CoursesContentsList = CoursesContents.split('class="block_course_list  block list_block"')[1].split('class="footer"')[0]
 #>Meine Kurse</h2>
  
@@ -410,8 +452,8 @@ if CoursesContentsList is None:
    log("Full page: " +  str(CoursesContents), 5)
    exit(1)
    
-courseNameList = CoursesContentsList.find_all(class_="course_title")
-
+#courseNameList = CoursesContentsList.find_all(class_="course_title")
+courseNameList = CoursesContentsList.select(".coursebox")
 
 #regexCourseName = re.compile('class="course_title">(.*?)</div>')
 #course_list = regexCourseName.findall(str(CoursesContentsList))
@@ -420,17 +462,18 @@ courses = []
 #blockCourse = True
 
 for course_string in courseNameList:
-    aCourse = course_string.find('a')
+    #aCourse = course_string.find('a')
+    aCourse = course_string.select("h3 a, h2 a")
     #course_name = aCourse.text.encode('ascii', 'ignore').replace('/', '|').replace('\\', '|').replace(' ', '_').replace('.', '_')
 
-    if aCourse is None:
+    if aCourse is None or len(aCourse) == 0:
        log("No link to this course was found!", 3)
        log("Full page: " +  str(course_string), 5)
        continue
 
-    course_name = decodeFilename(aCourse.text).strip("-")
+    course_name = decodeFilename(aCourse[0].text).strip("-")
 
-    course_link = aCourse.get('href')
+    course_link = removeSpaces(aCourse[0].get('href'))
     #if course_name == "TINF15B5: Programmieren \ Java":
     #   blockCourse = False
 
@@ -442,8 +485,6 @@ if len(courses) == 0:
    log("Unable to find courses")
    log("Full page: " + str(CoursesContentsList), 5)
    
-
-
 for course in courses:
     #response1 = urllib2.urlopen(course[1], timeout=10)
    
