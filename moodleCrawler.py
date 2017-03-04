@@ -407,7 +407,7 @@ CoursesContentsList = CoursesContentsSoup.find(id="region-main")
  
 if CoursesContentsList is None:
    log("Unable to find courses")
-   log("Full page: " + CoursesContents, 5)
+   log("Full page: " +  str(CoursesContents), 5)
    exit(1)
    
 courseNameList = CoursesContentsList.find_all(class_="course_title")
@@ -422,9 +422,10 @@ courses = []
 for course_string in courseNameList:
     aCourse = course_string.find('a')
     #course_name = aCourse.text.encode('ascii', 'ignore').replace('/', '|').replace('\\', '|').replace(' ', '_').replace('.', '_')
+
     if aCourse is None:
        log("No link to this course was found!", 3)
-       log("Full page: " + course_string, 5)
+       log("Full page: " +  str(course_string), 5)
        continue
 
     course_name = decodeFilename(aCourse.text).strip("-")
@@ -439,7 +440,7 @@ for course_string in courseNameList:
 
 if len(courses) == 0:
    log("Unable to find courses")
-   log("Full page: " + CoursesContentsList, 5)
+   log("Full page: " + str(CoursesContentsList), 5)
    
 
 
@@ -504,7 +505,7 @@ for course in courses:
  
     if course_links_Soup is None:
        log("Unable detect a Course")  #Maybe save the page standalone
-       log("Full page: " + CourseSoup, 5)
+       log("Full page: " +  str(CourseSoup), 5)
        continue
    
  
