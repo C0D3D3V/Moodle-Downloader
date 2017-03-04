@@ -16,6 +16,7 @@ Set the following in the file `config.ini` before running the script
 - `loglevel` : Sets the level of logging (0 - less information / 5 - all information)
 - `externallinks` : If external links should get crawled
 - `crawlcoursesink` : Moodle Course Crawler startpoint (Default course/index.php = all Courses) 
+- `colors` : If colors should be used
 
 All the files are stored in their respective directories inside the `root_dir` with the names as in moodle.
 
@@ -27,9 +28,11 @@ It is planed to build a script to login (and logout) from all courses on a moodl
 
 - Python 2
 - Beautifulsoup - `sudo apt-get install python-beautifulsoup` or `sudo pip install beautifulsoup4`
+- lxml or similar - `easy_install lxml` or see http://lxml.de/installation.html for more information.
+
+If `colors` is set to true:
 - Colorama - `sudo pip install colorama`
 - Termcolor - `sudo pip install termcolor`
-- lxml or similar - `easy_install lxml` or see http://lxml.de/installation.html for more information.
 
 ### EXTRAS
 
