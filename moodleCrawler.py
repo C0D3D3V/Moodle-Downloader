@@ -324,9 +324,144 @@ def decodeFilename(fileName):
 
 
 
+#warning this function exit the stript if it could not load the course list page
+#try to crawl all courses from moodlepage/my/
+def findOwnCourses():
+   log("Searching Courses...", 2)
+   
+   #Lookup in the Moodle source if it is standard (moodlePath/my/ are my courses)
+   try:
+      responseCourses = urllib2.urlopen(mainpageURL + "my/", timeout=10)
+   except Exception as e:
+      log("Connection lost! It is not possible to connect to course page! At: " + mainpageURL)
+      log("Exception details: " + str(e), 5)
+      exit(1)
+   CoursesContents = donwloadFile(responseCourses)
+   
+   
+   
+   
+   CoursesContentsSoup = BeautifulSoup(CoursesContents, "lxml")
+   
+   CoursesContentsList = CoursesContentsSoup.find(id="region-main")
+   
+   
+   #CoursesContentsList = CoursesContents.split('class="block_course_list  block list_block"')[1].split('class="footer"')[0]
+   #>Meine Kurse</h2>
+    
+   if CoursesContentsList is None:
+      log("Unable to find courses")
+      log("Full page: " +  str(CoursesContents), 5)
+      exit(1)
+      
+   #courseNameList = CoursesContentsList.find_all(class_="course_title")
+   courseNameList = CoursesContentsList.select(".coursebox")
+   
+   #regexCourseName = re.compile('class="course_title">(.*?)</div>')
+   #course_list = regexCourseName.findall(str(CoursesContentsList))
+   courses = []
+   
+   #blockCourse = True
+   
+   for course_string in courseNameList:
+       #aCourse = course_string.find('a')
+       aCourse = course_string.select("h3 a, h2 a")
+       #course_name = aCourse.text.encode('ascii', 'ignore').replace('/', '|').replace('\\', '|').replace(' ', '_').replace('.', '_')
+   
+       if aCourse is None or len(aCourse) == 0:
+          log("No link to this course was found!", 3)
+          log("Full page: " +  str(course_string), 5)
+          continue
+   
+       course_name = decodeFilename(aCourse[0].text).strip("-")
+   
+       course_link = removeSpaces(aCourse[0].get('href'))
+       #if course_name == "TINF15B5: Programmieren \ Java":
+       #   blockCourse = False
+   
+       #if blockCourse == False:
+       courses.append([course_name, course_link])
+       log("Found Course: '" + course_name + "'", 2)
+
+   return courses
+
+
+def searchfordumps(pathtoSearch):
+#find dublication in folder  pathtoSearch
+    filesBySize = {}
+    log('Scanning directory "%s"....' % pathtoSearch, 5)
+    os.path.walk(pathtoSearch, walker, filesBySize)
+
+    log('Finding potential dupes...', 4)
+    potentialDupes = []
+    potentialCount = 0
+    trueType = type(True)
+    sizes = filesBySize.keys()
+    sizes.sort()
+    for k in sizes:
+        inFiles = filesBySize[k]
+        outFiles = []
+        hashes = {}
+        if len(inFiles) is 1: continue
+        log('Testing %d files of size %d...' % (len(inFiles), k), 5)
+        for fileName in inFiles:
+            if not os.path.isfile(fileName):
+                continue
+            aFile = file(fileName, 'r')
+            hasher = md5.new(aFile.read(1024))
+            hashValue = hasher.digest()
+            if hashes.has_key(hashValue):
+                x = hashes[hashValue]
+                if type(x) is not trueType:
+                    outFiles.append(hashes[hashValue])
+                    hashes[hashValue] = True
+                outFiles.append(fileName)
+            else:
+                hashes[hashValue] = fileName
+            aFile.close()
+        if len(outFiles):
+            potentialDupes.append(outFiles)
+            potentialCount = potentialCount + len(outFiles)
+    del filesBySize
+
+    log('Found %d sets of potential dupes...' % potentialCount, 5)
+    log('Scanning for real dupes...', 5)
+
+    dupes = []
+    for aSet in potentialDupes:
+        outFiles = []
+        hashes = {}
+        for fileName in aSet:
+            log('Scanning file "%s"...' % fileName, 5)
+            aFile = file(fileName, 'r')
+            hasher = md5.new()
+            while True:
+                r = aFile.read(4096)
+                if not len(r):
+                    break
+                hasher.update(r)
+            aFile.close()
+            hashValue = hasher.digest()
+            if hashes.has_key(hashValue):
+                if not len(outFiles):
+                    outFiles.append(hashes[hashValue])
+                outFiles.append(fileName)
+            else:
+                hashes[hashValue] = fileName
+        if len(outFiles):
+            dupes.append(outFiles)
+
+    i = 0
+    for d in dupes:
+        log('Original is %s' % d[0], 4)
+        for f in d[1:]:
+            i = i + 1
+            log('Deleting %s' % f, 4)
+            os.remove(f) 
 
 
 
+#Login prozedur
 
 
 cj = cookielib.CookieJar()
@@ -425,66 +560,18 @@ logFile = logFileReader.read()
 logFileReader.close()
 
 
-log("Searching Courses...", 2)
-
-#Lookup in the Moodle source if it is standard (moodlePath/my/ are my courses)
-try:
-   responseCourses = urllib2.urlopen(mainpageURL + "my/", timeout=10)
-except Exception as e:
-   log("Connection lost! It is not possible to connect to course page! At: " + mainpageURL)
-   log("Exception details: " + str(e), 5)
-   exit(1)
-CoursesContents = donwloadFile(responseCourses)
 
 
-
-
-CoursesContentsSoup = BeautifulSoup(CoursesContents, "lxml")
-
-CoursesContentsList = CoursesContentsSoup.find(id="region-main")
-
-
-#CoursesContentsList = CoursesContents.split('class="block_course_list  block list_block"')[1].split('class="footer"')[0]
-#>Meine Kurse</h2>
+courses = findOwnCourses()
  
-if CoursesContentsList is None:
-   log("Unable to find courses")
-   log("Full page: " +  str(CoursesContents), 5)
-   exit(1)
-   
-#courseNameList = CoursesContentsList.find_all(class_="course_title")
-courseNameList = CoursesContentsList.select(".coursebox")
-
-#regexCourseName = re.compile('class="course_title">(.*?)</div>')
-#course_list = regexCourseName.findall(str(CoursesContentsList))
-courses = []
-
-#blockCourse = True
-
-for course_string in courseNameList:
-    #aCourse = course_string.find('a')
-    aCourse = course_string.select("h3 a, h2 a")
-    #course_name = aCourse.text.encode('ascii', 'ignore').replace('/', '|').replace('\\', '|').replace(' ', '_').replace('.', '_')
-
-    if aCourse is None or len(aCourse) == 0:
-       log("No link to this course was found!", 3)
-       log("Full page: " +  str(course_string), 5)
-       continue
-
-    course_name = decodeFilename(aCourse[0].text).strip("-")
-
-    course_link = removeSpaces(aCourse[0].get('href'))
-    #if course_name == "TINF15B5: Programmieren \ Java":
-    #   blockCourse = False
-
-    #if blockCourse == False:
-    courses.append([course_name, course_link])
-    log("Found Course: '" + course_name + "'", 2)
 
 if len(courses) == 0:
    log("Unable to find courses")
    log("Full page: " + str(CoursesContentsList), 5)
    
+
+#couse loop
+
 for course in courses:
     #response1 = urllib2.urlopen(course[1], timeout=10)
    
@@ -559,7 +646,6 @@ for course in courses:
 
         if hrefCourseFile is None or hrefCourseFile == "":
              log("There went something wrong, this is an empty link.", 3)
-             log("Full link: " + link.get('href'), 5)
              continue
  
 
@@ -824,76 +910,7 @@ for course in courses:
            saveFile(webfileurlCourseFile, current_dir, webFileContent, webFileCourseFile, hrefCourseFile) 
 
     #find dublication in folder  current_dir
-    filesBySize = {}
-    log('Scanning directory "%s"....' % current_dir, 5)
-    os.path.walk(current_dir, walker, filesBySize)
-
-    log('Finding potential dupes...', 4)
-    potentialDupes = []
-    potentialCount = 0
-    trueType = type(True)
-    sizes = filesBySize.keys()
-    sizes.sort()
-    for k in sizes:
-        inFiles = filesBySize[k]
-        outFiles = []
-        hashes = {}
-        if len(inFiles) is 1: continue
-        log('Testing %d files of size %d...' % (len(inFiles), k), 5)
-        for fileName in inFiles:
-            if not os.path.isfile(fileName):
-                continue
-            aFile = file(fileName, 'r')
-            hasher = md5.new(aFile.read(1024))
-            hashValue = hasher.digest()
-            if hashes.has_key(hashValue):
-                x = hashes[hashValue]
-                if type(x) is not trueType:
-                    outFiles.append(hashes[hashValue])
-                    hashes[hashValue] = True
-                outFiles.append(fileName)
-            else:
-                hashes[hashValue] = fileName
-            aFile.close()
-        if len(outFiles):
-            potentialDupes.append(outFiles)
-            potentialCount = potentialCount + len(outFiles)
-    del filesBySize
-
-    log('Found %d sets of potential dupes...' % potentialCount, 5)
-    log('Scanning for real dupes...', 5)
-
-    dupes = []
-    for aSet in potentialDupes:
-        outFiles = []
-        hashes = {}
-        for fileName in aSet:
-            log('Scanning file "%s"...' % fileName, 5)
-            aFile = file(fileName, 'r')
-            hasher = md5.new()
-            while True:
-                r = aFile.read(4096)
-                if not len(r):
-                    break
-                hasher.update(r)
-            aFile.close()
-            hashValue = hasher.digest()
-            if hashes.has_key(hashValue):
-                if not len(outFiles):
-                    outFiles.append(hashes[hashValue])
-                outFiles.append(fileName)
-            else:
-                hashes[hashValue] = fileName
-        if len(outFiles):
-            dupes.append(outFiles)
-
-    i = 0
-    for d in dupes:
-        log('Original is %s' % d[0], 4)
-        for f in d[1:]:
-            i = i + 1
-            log('Deleting %s' % f, 4)
-            os.remove(f) 
+    searchfordumps(current_dir)
 
 
 log("Update Complete")
