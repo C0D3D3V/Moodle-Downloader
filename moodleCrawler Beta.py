@@ -436,17 +436,13 @@ def searchfordumps(pathtoSearch):
     potentialDupes = []
     potentialCount = 0
     trueType = type(True)
-    print "files: " +  str(len(filesBySize))
     sizes = filesBySize.keys()
     sizes.sort()
     for k in sizes:
-        print "k: " + str(k)
-
         inFiles = filesBySize[k]
         outFiles = []
         hashes = {}
-        if len(inFiles) is 1: 
-          print "lol this shit"
+        if len(inFiles) is 1:
           continue
 
         log('Testing %d files of size %d...' % (len(inFiles), k), 5)
