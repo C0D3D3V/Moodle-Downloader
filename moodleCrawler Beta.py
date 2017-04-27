@@ -131,6 +131,8 @@ visitedPages = set() #hashtable -> faster !?
 def walker(arg, dirname, fnames):
     d = os.getcwd()
     os.chdir(dirname)
+    global filesBySize
+
     try:
         fnames.remove('Thumbs')
     except ValueError:
@@ -139,6 +141,7 @@ def walker(arg, dirname, fnames):
         if not os.path.isfile(f):
             continue
         size = os.stat(f)[stat.ST_SIZE]
+        #print f + " size: " + str(size)
         if size < 100:
             continue
         if filesBySize.has_key(size):
@@ -424,6 +427,7 @@ def findOwnCourses(myCoursesURL):
 
 def searchfordumps(pathtoSearch):
 #find dublication in folder  pathtoSearch
+    global filesBySize
     filesBySize = {}
     log('Scanning directory "%s"....' % pathtoSearch, 5)
     os.path.walk(pathtoSearch, walker, filesBySize)
@@ -432,13 +436,19 @@ def searchfordumps(pathtoSearch):
     potentialDupes = []
     potentialCount = 0
     trueType = type(True)
+    print "files: " +  str(len(filesBySize))
     sizes = filesBySize.keys()
     sizes.sort()
     for k in sizes:
+        print "k: " + str(k)
+
         inFiles = filesBySize[k]
         outFiles = []
         hashes = {}
-        if len(inFiles) is 1: continue
+        if len(inFiles) is 1: 
+          print "lol this shit"
+          continue
+
         log('Testing %d files of size %d...' % (len(inFiles), k), 5)
         for fileName in inFiles:
             if not os.path.isfile(fileName):
@@ -530,6 +540,7 @@ def logExternalLink(extlink, extLinkDir):
       logFileWriter = io.open(crawlHistoryFile, 'ab')
       logFileWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " External: "+ extlink + " saved to '" + externalLinkPath + "'\n")
       logFileWriter.close()
+      global logFile
       logFileReader = io.open(crawlHistoryFile, 'rb')
       logFile = logFileReader.read()
       logFileReader.close()
@@ -585,11 +596,13 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0):
           pagelink = calledFrom[:len(calledFrom) - len(calledFrom.split('/')[-1])] + pagelink
   
     #check crawl history
+    global logFile
     if usehistory == "true" and pagelink in logFile:
        log("This link was crawled in the past. I will not recrawl it, change the settings if you want to recrawl it.", 3)
        return
 
     #Add link to visited pages
+    global visitedPages
     if pagelink in visitedPages:
        log("This link was viewed in the past. I will not reviewed it.", 3)
        return
@@ -922,9 +935,11 @@ for course in courses:
 
     log("Check course: '" + course[0] + "'")
     crawlMoodlePage(course[1], course[0], current_dir, mainpageURL + "my/")
+    searchfordumps(normPath(current_dir + "/" + course[0] + "/"))
+
+
 
 searchfordumps(current_dir)
-
 
 
  
