@@ -717,8 +717,14 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0):
        page_links_Soup = PageSoup.find(id="region-main") 
 
        if not page_links_Soup is None: 
-          [s.extract() for s in PageSoup('aside')]
-          PageLinkContent = str(PageSoup)
+          #build up own moodle page
+          #header without script tags
+          moodlePageHeader = PageSoup.find("head")
+          [s.extract() for s in moodlePageHeader('script')]
+
+          #[s.extract() for s in PageSoup('aside')]
+          #only main page
+          PageLinkContent = "<!DOCTYPE html> <html>" + str(moodlePageHeader) + "<body class='format-topics path-mod path-mod-assign safari dir-ltr lang-de yui-skin-sam yui3-skin-sam  pagelayout-incourse category-246 has-region-side-pre used-region-side-pre has-region-side-post empty-region-side-post side-pre-only jsenabled'>" + str(page_links_Soup) + "</body></html>"
 
           page_links = page_links_Soup.find_all('a')
    
