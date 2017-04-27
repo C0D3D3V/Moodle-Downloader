@@ -76,6 +76,7 @@ crawlwiki = checkQuotationMarks(conf.get("crawl", "wiki")) #/wiki/
 usehistory = checkQuotationMarks(conf.get("crawl", "history")) #do not recrawl
 loglevel = checkQuotationMarks(conf.get("crawl", "loglevel"))
 downloadExternals = checkQuotationMarks(conf.get("crawl", "externallinks"))
+maxdepth = checkQuotationMarks(conf.get("crawl", "maxdepth"))
 
 
 authentication_url = checkQuotationMarks(conf.get("auth", "url"))
@@ -539,6 +540,7 @@ def logExternalLink(extlink, extLinkDir):
 
 #try to crawl all links on a moodle page. And runs rekursive this funktion on it
 def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0):
+
     if calledFrom is None or calledFrom == "":
        log("Something went wrong! CalledFrom is empty!", 2) 
        calledFrom = ""
@@ -562,6 +564,10 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0):
  
     log("Check page: '" + pagelink + "'' named: '" + pagename + "' found on: '" + calledFrom + "'' depth: " + str(depth), 2) 
    
+    if depth > maxdepth:
+       log("Max depth is reached! Please change the max depth if you want to crawl this link.", 2)
+       return
+
     if wrongParameter == True:
        log("The parameters are to wrong. I return!", 2) 
        return
@@ -614,6 +620,19 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0):
     if crawlwiki == "false" and "/wiki/" in pagelink and isexternlink == False:
        log("Ups this is a wiki. I do not crawl this wiki. Change the settings if you want to crawl wikis.", 3)
        return
+
+    #Skip Moodle Pages
+    #/user/   = users                               | skipTotaly
+    #/badges/ = Auszeichnungen                      | skipTotaly
+    #/blog/ = blogs                                 | skipTotaly
+    #/feedback/ = feedback page unwichtig ?         | skipTotaly
+
+    #/choicegroup/ = gruppen wahl -- unwichtig ?    | skipTotaly
+    #/groupexchange/ = gruppenwechsel unwichtig?    | skipTotaly
+    if isexternlink == False:
+       if "/user/" in pagelink or  "/badges/" in pagelink or "/blog/" in pagelink or "/feedback/" in pagelink or "/choicegroup/" in pagelink or "/groupexchange/" in pagelink:
+          log("This is a moodle page. But I will skip it because it is not important.", 4)
+          return
 
 
 
@@ -688,42 +707,85 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0):
 
     pageFoundLinks = 0
 
-    pageFilePath = saveFile(pageFileName, parentDir, PageLinkContent, responsePageLink, pagelink)
+    isaMoodlePage = False
 
+    page_links = None
 
     if pageIsHtml == True and isexternlink == False:
        PageSoup = BeautifulSoup(PageLinkContent, "lxml") 
  
        page_links_Soup = PageSoup.find(id="region-main")
     
-       if page_links_Soup is None:
-          log("Unable detect a normal moodle page")  
-          return
-      
-       page_links = page_links_Soup.find_all('a')
-        
-       pageFoundLinks = len(page_links)
-
-       for link in page_links:
-          hrefPageLink = link.get('href') 
-          nextName = link.text
-
-          #remove moodle shit
-          removeShit = link.select(".accesshide")
-          if not removeShit is None and len(removeShit) == 1:
-            removeShitText = removeShit[0].text
-            if nextName.endswith(removeShitText):
-                nextName = nextName[:-len(removeShitText)]
+       if not page_links_Soup is None: 
+          page_links = page_links_Soup.find_all('a')
+           
+          pageFoundLinks = len(page_links)
+          isaMoodlePage = True   #+++++++++++++++ check if this is a moodle folder page .... if it is plaace the file into the folder
 
 
-          nextName = decodeFilename(nextName).strip("-")
+    #do some filters for moodle pages
+    pageSaveDir = parentDir
+    doSave = True
+    doAddToHistory = False
 
 
-          crawlMoodlePage(hrefPageLink, nextName, pageDir, pagelink, (depth + 1))
+#/url/ = redirekt unwichtig                     | doNotSave; DoNotRecrawl
+#/resource/ = redirekt unwichtig!               | doNotSave; DoNotRecrawl
+
+#/folder/ = folder strukt unwichtig ?           | doNotSave;
+
+#/pluginfile.php/ = download file               | DoNotRecrawl;
+
+#/course/view.php = startpage course            | saveInPagedir
+
+#/page/ = info meistens WICHTIG                 | ???
+#/wiki/ = wiki shit                             | saveInPagedir
+#/quiz/ = hausaufgaben wichtig ?                | saveInPagedir
+
+
+    if isaMoodlePage:
+         #saveIt in pageDir
+         if "/course/view.php" in pagelink or "/wiki/" in pagelink  or "/quiz/" in pagelink:
+            pageSaveDir = pageDir
+
+         #Add To History -> not recrawl
+         if  "/pluginfile.php/" in pagelink  or "/url/" in pagelink or "/resource/" in pagelink:
+            doAddToHistory = True
+
+         #do not save
+         if "/folder/" in pagelink  or "/url/" in pagelink  or "/resource/" in pagelink:
+            doSave = False
+
+         #remove in every moodle page the action modules
+
+
+    pageFilePath = "This file was not saved. It is listed here for crawl purposes."
+    if doSave:
+       pageFilePath = saveFile(pageFileName, pageSaveDir, PageLinkContent, responsePageLink, pagelink)
+
+
+    if not page_links is None:
+      for link in page_links:
+         hrefPageLink = link.get('href') 
+         nextName = link.text
+
+         #remove moodle shit (at the end of a link text)
+         removeShit = link.select(".accesshide")
+         if not removeShit is None and len(removeShit) == 1:
+           removeShitText = removeShit[0].text
+           if nextName.endswith(removeShitText):
+               nextName = nextName[:-len(removeShitText)]
+
+
+         nextName = decodeFilename(nextName).strip("-")
+
+
+         crawlMoodlePage(hrefPageLink, nextName, pageDir, pagelink, (depth + 1))
+
 
     #+++++++++++++ warning this needs to be fixed - it do not add every page right ++++++++++++   
     # add Link to crawler history
-    if isexternlink == True or pageIsHtml == False: 
+    if isexternlink == True or pageIsHtml == False or doAddToHistory == True: 
        addFileToLog(pagelink, pageFilePath)
 
 
