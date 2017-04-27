@@ -714,13 +714,17 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0):
     if pageIsHtml == True and isexternlink == False:
        PageSoup = BeautifulSoup(PageLinkContent, "lxml") 
  
-       page_links_Soup = PageSoup.find(id="region-main")
-    
+       page_links_Soup = PageSoup.find(id="region-main") 
+
        if not page_links_Soup is None: 
+          [s.extract() for s in PageSoup('aside')]
+          PageLinkContent = str(PageSoup)
+
           page_links = page_links_Soup.find_all('a')
-           
+   
+
           pageFoundLinks = len(page_links)
-          isaMoodlePage = True   #+++++++++++++++ check if this is a moodle folder page .... if it is plaace the file into the folder
+          isaMoodlePage = True 
 
 
     #do some filters for moodle pages
@@ -782,8 +786,7 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0):
 
          crawlMoodlePage(hrefPageLink, nextName, pageDir, pagelink, (depth + 1))
 
-
-    #+++++++++++++ warning this needs to be fixed - it do not add every page right ++++++++++++   
+  
     # add Link to crawler history
     if isexternlink == True or pageIsHtml == False or doAddToHistory == True: 
        addFileToLog(pagelink, pageFilePath)
