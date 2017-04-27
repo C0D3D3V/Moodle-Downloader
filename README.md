@@ -12,7 +12,9 @@ Set the following in the file `config.ini` before running the script
 - `root_dir` : The root directory for where the files are to be stored
 - `url` : URL for moodle authentication
 - `forum` : If forums should also be crawled
+- `wiki` : If wikis should also be crawled
 - `history` : If a history file should be used
+- `maxdepth` : The depth how deep the crawler should maximal crawl (default = 9)
 - `loglevel` : Sets the level of logging (0 - less information / 5 - all information)
 - `externallinks` : If external links should get crawled
 - `crawlcoursesink` : Moodle Course Crawler startpoint (Default course/index.php = all Courses) 
