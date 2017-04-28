@@ -271,9 +271,9 @@ def saveFile(webFileFilename, pathToSave, webFileContent, webFileResponse, webFi
        ii += 1
      
    try:
-      log("Creating new file: '" +  file_name + "'")
+      log("Creating new file: 'File://" +  file_name + "'")
    except Exception as e:
-      log("Exception: " + str(e) + "    PathToSave:" +  pathToSave)
+      log("Exception: " + str(e) + "    PathToSave: File://" +  pathToSave)
       exit(1)
 
 
@@ -516,18 +516,18 @@ def logExternalLink(extlink, extLinkDir):
       externallinks = externalLinkReadeer.read()
       externalLinkReadeer.close()
       if not extlink in externallinks:
-         log("I will store it in the '" + externalLinkPath + "' file.", 4)
+         log("I will store it in the 'File://" + externalLinkPath + "' file.", 4)
          externalLinkWriter = io.open(externalLinkPath, 'ab')
          externalLinkWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " "+ extlink + "\n")
          externalLinkWriter.close()
          
 
       else:
-         log("This link was stored in the '" + externalLinkPath + "' file earlier.", 5)
+         log("This link was stored in the 'File://" + externalLinkPath + "' file earlier.", 5)
          boolExternalLinkStored = False
 
    else:
-      log("I will store it in the '" + externalLinkPath + "' file.", 4)
+      log("I will store it in the 'File://" + externalLinkPath + "' file.", 4)
       externalLinkWriter = io.open(externalLinkPath, 'ab')
       externalLinkWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " "+ extlink + "\n")
       externalLinkWriter.close()
@@ -752,6 +752,7 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0):
 #/resource/ = redirekt unwichtig!               | doNotSave; DoNotRecrawl
 
 #/folder/ = folder strukt unwichtig ?           | doNotSave;
+#/assign/ = Aufgaben Folder                     | doNotSave;
 
 #/pluginfile.php/ = download file               | DoNotRecrawl;
 
@@ -759,7 +760,7 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0):
 
 #/page/ = info meistens WICHTIG                 | ???
 #/wiki/ = wiki shit                             | saveInPagedir
-#/quiz/ = hausaufgaben wichtig ?                | saveInPagedir
+#/quiz/ = hausaufgaben wichtig ?                | saveInPagedir      ??maybe do not save  
 
 
     if isaMoodlePage:
@@ -772,7 +773,7 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0):
             doAddToHistory = True
 
          #do not save
-         if "/folder/" in pagelink  or "/url/" in pagelink  or "/resource/" in pagelink:
+         if "/folder/" in pagelink  or "/url/" in pagelink  or "/resource/" in pagelink or "/assign/" in pagelink:
             doSave = False
 
          #remove in every moodle page the action modules
