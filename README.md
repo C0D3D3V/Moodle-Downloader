@@ -17,14 +17,14 @@ Set the following in the file `config.ini` before running the script
 - `maxdepth` : The depth how deep the crawler should maximal crawl (default = 9)
 - `loglevel` : Sets the level of logging (0 - less information / 5 - all information)
 - `externallinks` : If external links should get crawled
-- `crawlcoursesink` : Moodle Course Crawler startpoint (Default course/index.php = all Courses) 
+- `crawlcourseslink` : Moodle Course Crawler startpoint (Default course/index.php = all Courses) 
 - `colors` : If colors should be used (For Windows use Cmder to display colors correct. http://cmder.net/)
 
 All the files are stored in their respective directories inside the `root_dir` with the names as in moodle.
 
 The crawler finds only coourses in your course list. So make sure that you check your settings of your course list on `https://whateverYourMoodleAdress/my` , so that every of your courses gets displayed there.
 
-It is planed to build a script to login (and logout) from all courses on a moodle platform. For the moment there is a script called `moodleCourseCrawler.py` that uses the `crawlcoursesink` option. This script only logs all courses on the platform.
+It is planed to build a script to login (and logout) from all courses on a moodle platform. For the moment there is a script called `moodleCourseCrawler.py` that uses the `crawlcourseslink` option. This script only logs all courses on the platform.
 
 
 #### REQUIREMENTS
