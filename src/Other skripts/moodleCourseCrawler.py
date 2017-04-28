@@ -305,7 +305,7 @@ root_directory = checkQuotationMarks(conf.get("dirs", "root_dir"))
 username = checkQuotationMarks(conf.get("auth", "username"))
 password = checkQuotationMarks(conf.get("auth", "password"))
 loglevel = checkQuotationMarks(conf.get("crawl", "loglevel"))
-crawlcoursesink = addBegSlashIfNeeded(checkQuotationMarks(conf.get("crawl", "crawlcoursesink")))
+crawlcoursesink = addBegSlashIfNeeded(checkQuotationMarks(conf.get("crawl", "crawlcourseslink")))
 
 
 authentication_url = checkQuotationMarks(conf.get("auth", "url"))
