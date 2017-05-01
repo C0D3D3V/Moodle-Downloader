@@ -287,7 +287,7 @@ def saveFile(webFileFilename, pathToSave, webFileContent, webFileResponse, webFi
      pdfFile.close()
 
    except Exception as e:
-        log("File was not created: 'File://" +  file_name + "'" + "Exception: " + str(e))
+        log('File was not created: "File://' +  file_name + '"' + "Exception: " + str(e))
         return file_name
  
 
@@ -297,7 +297,7 @@ def saveFile(webFileFilename, pathToSave, webFileContent, webFileResponse, webFi
 
 
    if fileWasDeleted == False:
-      log("Creating new file: 'File://" +  file_name + "'")
+      log('Creating new file: "File://' +  file_name + '"')
    return file_name
 
 
@@ -455,7 +455,7 @@ def searchfordumpsSpecific(filepath, fileName, filetype, pathtoSearch):
     
 
     if not os.path.isfile(filepath):
-        log("Error: File://" + filepath + " is not a file.") 
+        log('Error: "File://' + filepath + '" is not a file.') 
         return False
 
     coresize = os.stat(filepath)[stat.ST_SIZE]
@@ -651,18 +651,18 @@ def logExternalLink(extlink, extLinkDir):
       externallinks = externalLinkReadeer.read()
       externalLinkReadeer.close()
       if not extlink in externallinks:
-         log("I will store it in the 'File://" + externalLinkPath + "' file.", 4)
+         log('I will store it in the "File://' + externalLinkPath + '" file.', 4)
          externalLinkWriter = io.open(externalLinkPath, 'ab')
          externalLinkWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " "+ extlink + "\n")
          externalLinkWriter.close()
          
 
       else:
-         log("This link was stored in the 'File://" + externalLinkPath + "' file earlier.", 5)
+         log('This link was stored in the "File://' + externalLinkPath + '" file earlier.', 5)
          boolExternalLinkStored = False
 
    else:
-      log("I will store it in the 'File://" + externalLinkPath + "' file.", 4)
+      log('I will store it in the "File://' + externalLinkPath + '" file.', 4)
       externalLinkWriter = io.open(externalLinkPath, 'ab')
       externalLinkWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " "+ extlink + "\n")
       externalLinkWriter.close()
@@ -866,7 +866,9 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0):
           moodlePageHeader = PageSoup.find("head")
           [s.extract() for s in moodlePageHeader('script')]
 
-          #[s.extract() for s in PageSoup('aside')]
+          [s.extract() for s in page_links_Soup.select("input[name=sesskey]")]
+
+
           #only main page
           PageLinkContent = "<!DOCTYPE html> <html>" + str(moodlePageHeader) + "<body class='format-topics path-mod path-mod-assign safari dir-ltr lang-de yui-skin-sam yui3-skin-sam  pagelayout-incourse category-246 has-region-side-pre used-region-side-pre has-region-side-post empty-region-side-post side-pre-only jsenabled'>" + str(page_links_Soup) + "</body></html>"
 
@@ -1045,6 +1047,7 @@ if not os.path.isdir(root_directory):
  #create crealHistoryfile
 if not os.path.isfile(crawlHistoryFile):
    logFileWriter = open(crawlHistoryFile, 'ab')
+   logFileWriter.write("LogFile:V1.0")
    logFileWriter.close()
    
 logFileReader = open(crawlHistoryFile, 'rb')
@@ -1052,7 +1055,30 @@ logFile = logFileReader.read()
 logFileReader.close()
 
 
+#Update log file 
+logfileOld = False
+logFileLines = logFile.split("\n")
 
+for line in logFileLines:
+  if not "LogFile:V1.0" in line:
+    logfileOld = True
+  break
+
+if logfileOld:
+  log("Fixing Log File", 2)
+  os.remove(crawlHistoryFile)
+  logFileWriter = open(crawlHistoryFile, 'ab')
+  logFileWriter.write("LogFile:V1.0\n")
+  for line in logFileLines:
+     if "Crawler" in line and "log" in line and "file" in line and "for" in line:
+        continue
+     logFileWriter.write(line + "\n")
+          
+  logFileWriter.close()
+     
+  logFileReader = open(crawlHistoryFile, 'rb')
+  logFile = logFileReader.read()
+  logFileReader.close()
 
 #find own courses (returns an array)
 courses = findOwnCourses(mainpageURL)
