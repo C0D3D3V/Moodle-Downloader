@@ -29,6 +29,8 @@ import md5
 import re
 import filecmp
 import sys
+import cgi
+import fnmatch
 
 from datetime import datetime
 from ConfigParser import ConfigParser
@@ -43,20 +45,25 @@ def checkQuotationMarks(settingString):
    return settingString
  
 
+
 def addSlashIfNeeded(settingString):
    if not settingString is None and not settingString[-1] == "/":
       settingString = settingString + "/"
    return settingString
 
 
+
 def normPath(pathSring):
    return os.path.normpath(pathSring)
+
+
 
 def removeSpaces(pathString):
    return pathString.replace(" ", "")
 
 
 
+#get Config
 conf = ConfigParser()
 project_dir = os.path.dirname(os.path.abspath(__file__))
 conf.read(os.path.join(project_dir, 'config.ini'))
@@ -66,9 +73,11 @@ root_directory = normPath(checkQuotationMarks(conf.get("dirs", "root_dir")))
 username = checkQuotationMarks(conf.get("auth", "username"))
 password = checkQuotationMarks(conf.get("auth", "password"))
 crawlforum = checkQuotationMarks(conf.get("crawl", "forum")) #/forum/
+crawlwiki = checkQuotationMarks(conf.get("crawl", "wiki")) #/wiki/
 usehistory = checkQuotationMarks(conf.get("crawl", "history")) #do not recrawl
 loglevel = checkQuotationMarks(conf.get("crawl", "loglevel"))
 downloadExternals = checkQuotationMarks(conf.get("crawl", "externallinks"))
+maxdepth = checkQuotationMarks(conf.get("crawl", "maxdepth"))
 
 
 authentication_url = checkQuotationMarks(conf.get("auth", "url"))
@@ -76,6 +85,8 @@ useColors = checkQuotationMarks(conf.get("other", "colors"))
 
 
 
+
+#Import Libs if needed
 try:
    from bs4 import BeautifulSoup
 except Exception as e:
@@ -103,11 +114,26 @@ if useColors == "true":
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
+#Setup Dump Search
 filesBySize = {}
+
+
+#Setup Loader
+cj = cookielib.CookieJar()
+opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
+opener.addheaders = [('User-agent', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36')]
+urllib2.install_opener(opener)
+
+
+#setup crawler live history
+visitedPages = set() #hashtable -> faster !?
+
 
 def walker(arg, dirname, fnames):
     d = os.getcwd()
     os.chdir(dirname)
+    global filesBySize
+
     try:
         fnames.remove('Thumbs')
     except ValueError:
@@ -116,6 +142,7 @@ def walker(arg, dirname, fnames):
         if not os.path.isfile(f):
             continue
         size = os.stat(f)[stat.ST_SIZE]
+        #print f + " size: " + str(size)
         if size < 100:
             continue
         if filesBySize.has_key(size):
@@ -126,9 +153,11 @@ def walker(arg, dirname, fnames):
         a.append(os.path.join(dirname, f))
     os.chdir(d)
 
+
+
 #Log levels:
 # - Level 0: Minimal Information + small Errors
-# - Level 1: More Information + Successes 
+# - Level 1: More Information + Successes  + dublicates deleted
 # - Level 2: Doing Statemants + Found information
 # - Level 3: More Errors + More Infos
 # - Level 4: More Doing Statements + Dowload Info + Scann Dublicates
@@ -165,7 +194,6 @@ def log(logString, level=0):
             print(datetime.now().strftime('%H:%M:%S') + " " + logString)
          elif level == 5:
             print(datetime.now().strftime('%H:%M:%S') + " " + logString)
-
 
 
 
@@ -211,6 +239,7 @@ def donwloadFile(downloadFileResponse):
    return downloadFileContent
 
 
+
 def saveFile(webFileFilename, pathToSave, webFileContent, webFileResponse, webFileHref):
    if webFileFilename == "":
       webFileFilename = "index.html"
@@ -225,41 +254,63 @@ def saveFile(webFileFilename, pathToSave, webFileContent, webFileResponse, webFi
       file_name = file_name[:len(file_name) - 4] + ".html"
    
    #file_name = urllib.unquote(url).decode('utf8')
-         
+
 
    if not os.path.isdir(pathToSave):
-      os.makedirs(pathToSave)    
+      os.makedirs(pathToSave)
+
+   dublicatedName = False
+
+   filetype = "." + file_name.split('.')[-1]
+   fileBeginn = file_name[:(len(file_name) - len(filetype))]
+   fileName = fileBeginn.split(os.sep)[-1]
+   pathtoSearch = fileBeginn[:(len(fileBeginn) - len(fileName))]
 
    if os.path.isfile(file_name): 
       fileend = file_name.split('.')[-1]
       filebegin = file_name[:(len(file_name) - len(fileend)) - 1]
-         
+           
       ii = 1
       while True:
        new_name = filebegin + "_" + str(ii) + "." + fileend
        if not os.path.isfile(new_name):
           file_name = new_name
+          dublicatedName = True
           break
        ii += 1
-     
+
+
    try:
-      log("Creating new file: '" +  file_name + "'")
+     pdfFile = io.open(file_name, 'wb')
+     pdfFile.write(webFileContent)
+     webFileResponse.close()
+     pdfFile.close()
+
    except Exception as e:
-      log("Exception: " + str(e) + "    Lol   " +  pathToSave)
-      exit(1)
+        log("File was not created: 'File://" +  file_name + "'" + "Exception: " + str(e))
+        return file_name
+ 
+
+   fileWasDeleted = False
+   if dublicatedName:
+      fileWasDeleted = searchfordumpsSpecific(file_name,fileName ,filetype, pathtoSearch)
 
 
-   pdfFile = io.open(file_name, 'wb')
-   pdfFile.write(webFileContent)
-   webFileResponse.close()
-   pdfFile.close()
+   if fileWasDeleted == False:
+      log("Creating new file: 'File://" +  file_name + "'")
+   return file_name
+
+
+#adds an entry to the log file ... so that the file gets not recrawled
+def addFileToLog(pageLink, filePath):
    logFileWriter = io.open(crawlHistoryFile, 'ab')
-   logFileWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " "+ webFileHref + " saved to '" + file_name + "'\n")
+   logFileWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " "+ pageLink + " saved to '" + filePath + "'\n")
    logFileWriter.close()
    global logFile
    logFileReader = io.open(crawlHistoryFile, 'rb')
    logFile = logFileReader.read()
    logFileReader.close()
+
 
 
 #status:
@@ -323,17 +374,16 @@ def decodeFilename(fileName):
 
 
 
-
 #warning this function exit the stript if it could not load the course list page
 #try to crawl all courses from moodlepage/my/
-def findOwnCourses():
+def findOwnCourses(myCoursesURL):
    log("Searching Courses...", 2)
    
    #Lookup in the Moodle source if it is standard (moodlePath/my/ are my courses)
    try:
-      responseCourses = urllib2.urlopen(mainpageURL + "my/", timeout=10)
+      responseCourses = urllib2.urlopen(myCoursesURL + "my/", timeout=10)
    except Exception as e:
-      log("Connection lost! It is not possible to connect to course page! At: " + mainpageURL)
+      log("Connection lost! It is not possible to connect to course page! At: " + myCoursesURL)
       log("Exception details: " + str(e), 5)
       exit(1)
    CoursesContents = donwloadFile(responseCourses)
@@ -383,11 +433,136 @@ def findOwnCourses():
        courses.append([course_name, course_link])
        log("Found Course: '" + course_name + "'", 2)
 
+
+   if len(courses) == 0:
+      log("Unable to find courses")
+      log("Full page: " + str(CoursesContentsList), 5)
+
    return courses
 
 
+ 
+
+def searchfordumpsSpecific(filepath, fileName, filetype, pathtoSearch):
+    #find dublication in folder pathtoSearch with specific filename and filetype without subfolders
+      #filetype = "." + filepath.split('.')[-1]
+      #fileBeginn = filepath[:(len(filepath) - len(filetype))]
+      #fileName = fileBeginn.split(os.sep)[-1]
+      #pathtoSearch = fileBeginn[:(len(fileBeginn) - len(fileName))]
+
+    filesBySizeSpe = {}
+    log('Scanning directory "' + pathtoSearch + '" (file: "File://' + filepath + '", filename: "' + fileName + '", filetype: "' + filetype +'")....' , 5)
+    
+
+    if not os.path.isfile(filepath):
+        log("Error: File://" + filepath + " is not a file.") 
+        return False
+
+    coresize = os.stat(filepath)[stat.ST_SIZE]
+
+    fnames = fnmatch.filter(os.listdir(pathtoSearch), fileName + '*' + filetype)
+     
+    for f in fnames:
+        f = pathtoSearch + f
+
+        if not os.path.isfile(f):
+            continue
+        size = os.stat(f)[stat.ST_SIZE]
+        #print f + " size: " + str(size)
+        if not size == coresize:
+            continue
+        if filesBySizeSpe.has_key(size):
+            a = filesBySizeSpe[size]
+        else:
+            a = []
+            filesBySizeSpe[size] = a
+        a.append(os.path.join(pathtoSearch, f))
+   
+    log('Finding potential dupes...', 4)
+    potentialDupes = []
+    potentialCount = 0
+    trueType = type(True)
+    sizes = filesBySizeSpe.keys()
+    sizes.sort()
+    for k in sizes:
+        inFiles = filesBySizeSpe[k]
+        outFiles = []
+        hashes = {}
+        if len(inFiles) is 1:
+          continue
+
+        log('Testing %d files of size %d...' % (len(inFiles), k), 5)
+        for fileName in inFiles:
+            if not os.path.isfile(fileName):
+                continue
+            aFile = file(fileName, 'r')
+            hasher = md5.new(aFile.read(1024))
+            hashValue = hasher.digest()
+            if hashes.has_key(hashValue):
+                x = hashes[hashValue]
+                if type(x) is not trueType:
+                    outFiles.append(hashes[hashValue])
+                    hashes[hashValue] = True
+                outFiles.append(fileName)
+            else:
+                hashes[hashValue] = fileName
+            aFile.close()
+        if len(outFiles):
+            potentialDupes.append(outFiles)
+            potentialCount = potentialCount + len(outFiles)
+    del filesBySizeSpe
+
+    log('Found %d sets of potential dupes...' % potentialCount, 5)
+    log('Scanning for real dupes...', 5)
+
+    dupes = []
+    for aSet in potentialDupes:
+        outFiles = []
+        hashes = {}
+        for fileName in aSet:
+            log('Scanning file "%s"...' % fileName, 5)
+            aFile = file(fileName, 'r')
+            hasher = md5.new()
+            while True:
+                r = aFile.read(4096)
+                if not len(r):
+                    break
+                hasher.update(r)
+            aFile.close()
+            hashValue = hasher.digest()
+            if hashes.has_key(hashValue):
+                if not len(outFiles):
+                    outFiles.append(hashes[hashValue])
+                outFiles.append(fileName)
+            else:
+                hashes[hashValue] = fileName
+        if len(outFiles):
+            dupes.append(outFiles)
+  
+    foundfilepath = False
+    for d in dupes:
+        log('Test for correct dumps', 5)
+        if len(d) > 1:
+          for f in d:
+              if f == filepath:
+                log('Found correct dump - filepath: "File://' + f + '"', 1)
+                foundfilepath = True
+
+    i = 0
+    for d in dupes:
+        log('Original is %s' % d[0], 1)
+        for f in d[1:]:
+            i = i + 1
+            log('Deleting %s' % f, 1)
+            os.remove(f) 
+
+    return foundfilepath
+
+
+
 def searchfordumps(pathtoSearch):
-#find dublication in folder  pathtoSearch
+    #find dublication in folder  pathtoSearch
+    global filesBySize
     filesBySize = {}
     log('Scanning directory "%s"....' % pathtoSearch, 5)
     os.path.walk(pathtoSearch, walker, filesBySize)
@@ -402,7 +577,9 @@ def searchfordumps(pathtoSearch):
         inFiles = filesBySize[k]
         outFiles = []
         hashes = {}
-        if len(inFiles) is 1: continue
+        if len(inFiles) is 1:
+          continue
+
         log('Testing %d files of size %d...' % (len(inFiles), k), 5)
         for fileName in inFiles:
             if not os.path.isfile(fileName):
@@ -453,24 +630,324 @@ def searchfordumps(pathtoSearch):
 
     i = 0
     for d in dupes:
-        log('Original is %s' % d[0], 4)
+        log('Original is %s' % d[0], 1)
         for f in d[1:]:
             i = i + 1
-            log('Deleting %s' % f, 4)
+            log('Deleting %s' % f, 1)
             os.remove(f) 
 
 
 
-#Login prozedur
+#log External Link toLog file and File in Folder
+def logExternalLink(extlink, extLinkDir):
+   if not os.path.isdir(extLinkDir):
+      os.makedirs(extLinkDir)   
+   
+   externalLinkPath = normPath(addSlashIfNeeded(extLinkDir) + "external-links.log")
+   boolExternalLinkStored = True
+
+   if os.path.isfile(externalLinkPath):
+      externalLinkReadeer = io.open(externalLinkPath, 'rb')
+      externallinks = externalLinkReadeer.read()
+      externalLinkReadeer.close()
+      if not extlink in externallinks:
+         log("I will store it in the 'File://" + externalLinkPath + "' file.", 4)
+         externalLinkWriter = io.open(externalLinkPath, 'ab')
+         externalLinkWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " "+ extlink + "\n")
+         externalLinkWriter.close()
+         
+
+      else:
+         log("This link was stored in the 'File://" + externalLinkPath + "' file earlier.", 5)
+         boolExternalLinkStored = False
+
+   else:
+      log("I will store it in the 'File://" + externalLinkPath + "' file.", 4)
+      externalLinkWriter = io.open(externalLinkPath, 'ab')
+      externalLinkWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " "+ extlink + "\n")
+      externalLinkWriter.close()
+
+   if boolExternalLinkStored == True:
+      logFileWriter = io.open(crawlHistoryFile, 'ab')
+      logFileWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " External: "+ extlink + " saved to '" + externalLinkPath + "'\n")
+      logFileWriter.close()
+      global logFile
+      logFileReader = io.open(crawlHistoryFile, 'rb')
+      logFile = logFileReader.read()
+      logFileReader.close()
+
+   
 
 
-cj = cookielib.CookieJar()
-opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
-opener.addheaders = [('User-agent', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36')]
-urllib2.install_opener(opener)
+
+#try to crawl all links on a moodle page. And runs rekursive this funktion on it
+def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0):
+
+    if calledFrom is None or calledFrom == "":
+       log("Something went wrong! CalledFrom is empty!", 2) 
+       calledFrom = ""
+    
+    #check Parameter
+    wrongParameter = False
+
+    if pagelink is None or pagelink == "":
+       log("Something went wrong! Pagelink is empty!", 2) 
+       pagelink = ""
+       wrongParameter = True
+        
+    if pagename is None or pagename == "":
+       log("Something went wrong! Pagename is empty!", 2) 
+       pagename = ""
+        
+    if parentDir is None or parentDir == "":
+       log("Something went wrong! ParentDir is empty!", 2) 
+       parentDir = ""
+       wrongParameter = True
+ 
+    log("Check page: '" + pagelink + "'' named: '" + pagename + "' found on: '" + calledFrom + "'' depth: " + str(depth), 2) 
+   
+    if depth > maxdepth:
+       log("Max depth is reached! Please change the max depth if you want to crawl this link.", 2)
+       return
+
+    if wrongParameter == True:
+       log("The parameters are to wrong. I return!", 2) 
+       return
+
+    #check if link is empty
+    if pagelink is None or pagelink == "":
+       log("There went something wrong, this is an empty link.", 3)
+       return
+ 
+    #korregiere link falls nicht korrekt
+    if not pagelink.startswith("https://") and not pagelink.startswith("http://") and not pagelink.startswith("www."):
+       if pagelink.startswith('/'):
+          pagelink = calledFrom[:(len(calledFrom) - len(calledFrom.split('/')[-1])) - 1] + pagelink
+       else:
+          pagelink = calledFrom[:len(calledFrom) - len(calledFrom.split('/')[-1])] + pagelink
+  
+    #check crawl history
+    global logFile
+    if usehistory == "true" and pagelink in logFile:
+       log("This link was crawled in the past. I will not recrawl it, change the settings if you want to recrawl it.", 3)
+       return
+
+    #Add link to visited pages
+    global visitedPages
+    if pagelink in visitedPages:
+       log("This link was viewed in the past. I will not reviewed it.", 3)
+       return
+
+    visitedPages.add(pagelink)
+
+
+    #check if this is an external link
+    isexternlink = False
+
+    if not domainMoodle in pagelink:
+       log("This is an external link.", 2)
+       
+       logExternalLink(pagelink, parentDir)
+       
+       isexternlink = True
+       if downloadExternals == "false":
+          log("Ups this is an external link. I do not crawl external links. Change the settings if you want to crawl external links.", 3)
+          return
+
+
+    #check if the page is in a forum
+    if crawlforum == "false" and "/forum/" in pagelink and isexternlink == False:
+       log("Ups this is a forum. I do not crawl this forum. Change the settings if you want to crawl forums.", 3)
+       return
+    
+    #check if the page is in a wiki
+    if crawlwiki == "false" and "/wiki/" in pagelink and isexternlink == False:
+       log("Ups this is a wiki. I do not crawl this wiki. Change the settings if you want to crawl wikis.", 3)
+       return
+
+    #Skip Moodle Pages
+    #/user/   = users                               | skipTotaly
+    #/badges/ = Auszeichnungen                      | skipTotaly
+    #/blog/ = blogs                                 | skipTotaly
+    #/feedback/ = feedback page unwichtig ?         | skipTotaly
+
+    #/choicegroup/ = gruppen wahl -- unwichtig ?    | skipTotaly
+    #/groupexchange/ = gruppenwechsel unwichtig?    | skipTotaly
+    if isexternlink == False:
+       if "/user/" in pagelink or  "/badges/" in pagelink or "/blog/" in pagelink or "/feedback/" in pagelink or "/choicegroup/" in pagelink or "/groupexchange/" in pagelink:
+          log("This is a moodle page. But I will skip it because it is not important.", 4)
+          return
 
 
 
+    #try to get a response from link
+    try:
+       responsePageLink = urllib2.urlopen(pagelink, timeout=10)
+    except Exception as e:
+       log("Connection lost! Page does not exist!", 2)
+       log("Exception details: " + str(e), 5)
+       return
+     
+    #get the filename
+    pageFileName = ""
+    try:
+       pageFileNameEnc = responsePageLink.info()['Content-Disposition']
+       value, params = cgi.parse_header(pageFileNameEnc)
+       pageFileName = params['filename']
+    except Exception as e:
+          log("No Content-Disposition available. Exception details: " + str(e), 5)
+    if pageFileName is None or pageFileName == "":
+       pageFileName = os.path.basename(urllib2.urlparse.urlsplit(pagelink).path)
+    
+    pageFileName = decodeFilename(pageFileName).strip("-")
+
+    #is this page a html page
+    pageIsHtml = False
+    if "text/html" in responsePageLink.info().getheader('Content-Type') or pageFileName[-4:] == ".php" or pageFileName[-5:] == ".html":
+       pageIsHtml = True
+
+    #cheating: try to fix moodle page names
+    if isexternlink == False and pageIsHtml == True:
+       pageFileName = pagename + ".html"
+
+
+    PageLinkContent = donwloadFile(responsePageLink)
+    
+     
+    #check for login status
+    if pageIsHtml == True:
+       try:
+          loginStatus = checkLoginStatus(PageLinkContent) 
+       except Exception as e:
+          log("Connection lost! It is not possible to connect to moodle!", 3)
+          log("Exception details: " + str(e), 5)
+          return
+
+       if loginStatus == 0:  #Not logged in
+          log("Ups, there went something wrong with the moodle login - this is bad. If this happens again please contect the project maintainer.", 0)
+         
+          #try to donload anyway ? ++++++++++++++++++++++++++++++++++++
+
+          return
+
+       elif loginStatus == 2: #Relogged in
+          log("Recheck Page: '" + pagelink + "'", 4)
+          try:
+             responsePageLink = urllib2.urlopen(pagelink, timeout=10)
+          except Exception as e:
+             log("Connection lost! Page does not exist!", 3)
+             log("Exception details: " + str(e), 5)
+             return
+     
+          PageLinkContent = donwloadFile(responsePageLink)
+          
+       elif loginStatus == 3: #Not a moodle Page
+          if isexternlink == False:
+             log("Strangely, this is not a moodle page! I did not expect that this is an external link!", 3)
+             isexternlink = True
+ 
+
+    pageDir = normPath(addSlashIfNeeded(parentDir) + pagename)
+
+    pageFoundLinks = 0
+
+    isaMoodlePage = False
+
+    page_links = None
+
+    if pageIsHtml == True and isexternlink == False:
+       PageSoup = BeautifulSoup(PageLinkContent, "lxml") 
+ 
+       page_links_Soup = PageSoup.find(id="region-main") 
+
+       if not page_links_Soup is None: 
+          #build up own moodle page
+          #header without script tags
+          moodlePageHeader = PageSoup.find("head")
+          [s.extract() for s in moodlePageHeader('script')]
+
+          #[s.extract() for s in PageSoup('aside')]
+          #only main page
+          PageLinkContent = "<!DOCTYPE html> <html>" + str(moodlePageHeader) + "<body class='format-topics path-mod path-mod-assign safari dir-ltr lang-de yui-skin-sam yui3-skin-sam  pagelayout-incourse category-246 has-region-side-pre used-region-side-pre has-region-side-post empty-region-side-post side-pre-only jsenabled'>" + str(page_links_Soup) + "</body></html>"
+
+          page_links = page_links_Soup.find_all('a')
+   
+
+          pageFoundLinks = len(page_links)
+          isaMoodlePage = True 
+
+
+    #do some filters for moodle pages
+    pageSaveDir = parentDir
+    doSave = True
+    doAddToHistory = False
+
+
+#/url/ = redirekt unwichtig                     | doNotSave; DoNotRecrawl
+#/resource/ = redirekt unwichtig!               | doNotSave; DoNotRecrawl
+
+#/folder/ = folder strukt unwichtig ?           | doNotSave;
+#/assign/ = Aufgaben Folder                     | doNotSave;
+
+#/pluginfile.php/ = download file               | DoNotRecrawl;
+
+#/course/view.php = startpage course            | saveInPagedir
+
+#/page/ = info meistens WICHTIG                 | ???
+#/wiki/ = wiki shit                             | saveInPagedir
+#/quiz/ = hausaufgaben wichtig ?                | saveInPagedir      ??maybe do not save  
+
+
+    if isaMoodlePage:
+         #saveIt in pageDir
+         if "/course/view.php" in pagelink or "/wiki/" in pagelink  or "/quiz/" in pagelink:
+            pageSaveDir = pageDir
+
+         #Add To History -> not recrawl
+         if  "/pluginfile.php/" in pagelink  or "/url/" in pagelink or "/resource/" in pagelink:
+            doAddToHistory = True
+
+         #do not save
+         if "/folder/" in pagelink  or "/url/" in pagelink  or "/resource/" in pagelink or "/assign/" in pagelink:
+            doSave = False
+
+         #remove in every moodle page the action modules
+
+
+    pageFilePath = "This file was not saved. It is listed here for crawl purposes."
+    if doSave:
+       pageFilePath = saveFile(pageFileName, pageSaveDir, PageLinkContent, responsePageLink, pagelink)
+
+
+    if not page_links is None:
+      for link in page_links:
+         hrefPageLink = link.get('href') 
+         nextName = link.text
+
+         #remove moodle shit (at the end of a link text)
+         removeShit = link.select(".accesshide")
+         if not removeShit is None and len(removeShit) == 1:
+           removeShitText = removeShit[0].text
+           if nextName.endswith(removeShitText):
+               nextName = nextName[:-len(removeShitText)]
+
+
+         nextName = decodeFilename(nextName).strip("-")
+
+
+         crawlMoodlePage(hrefPageLink, nextName, pageDir, pagelink, (depth + 1))
+
+  
+    # add Link to crawler history
+    if isexternlink == True or pageIsHtml == False or doAddToHistory == True: 
+       addFileToLog(pagelink, pageFilePath)
+
+
+ 
+
+ 
+
+#Setup Login Credentials
 moodlePath = ""
 useSpecpath = False
 
@@ -480,32 +957,39 @@ else:
    useSpecpath = True
    log("This script will probably not work. Please use an authentication URL that ends with /login/index.php or contact the project owner.")
 
-
-
 payload = {
     'username': username,
     'password': password
 }
 
 
+data = urllib.urlencode(payload)
+
 crawlHistoryFile = normPath(addSlashIfNeeded(root_directory)+ ".crawlhistory.log")
 
-data = urllib.urlencode(payload)
+
 
 
 log("Moodle Crawler started working.")
 
 # Connection established?
 log("Try to login...", 2)
-log("Authentication url: '" + authentication_url + "'", 3)
-log("Username: '" + username + "'", 3)
-log("Password: '" + password + "'", 3)
-log("Root directory: '" + root_directory + "'", 3)
+
+#Log the credentials
+#log("+++++++++ Login Credentials - Remove these lines from the log file +++++++++, 3)
+#log("These lines are only for check purposes, 3)
+#log("Authentication url: '" + authentication_url + "'", 3)
+#log("Username: '" + username + "'", 3)
+#log("Password: '" + password + "'", 3)
+#log("Root directory: '" + root_directory + "'", 3)
+#log("+++++++++ End Login Credentials +++++++++, 3)
 
 
 
+
+#login prozedur
 req = urllib2.Request(authentication_url, data)
-#response = urllib2.urlopen(req)
+
 try:
    responseLogin = urllib2.urlopen(req, timeout=10)
 except Exception as e:
@@ -522,7 +1006,7 @@ if "errorcode=" in responseLogin.geturl():
 
 #Lookup in the Moodle source if it is standard   ("Logout" on every Page)
 LoginSoup = BeautifulSoup(LoginContents, "lxml") 
-#LoginStatusConntent = LoginSoup.find(class_="logininfo")
+
 LoginStatusConntent = LoginSoup.select(".logininfo")
 if LoginStatusConntent is None or len(LoginStatusConntent) == 0 or ("Logout" not in str(LoginStatusConntent[-1]) and "logout" not in str(LoginStatusConntent[-1])): 
    log("Cannot connect to moodle or Moodle has changed. Crawler is not logged in. Check your login data.") 
@@ -534,8 +1018,10 @@ log("Logged in!", 1)
  
  
 
+#Get moodle base url
+
 #Lookup in the Moodle source if it is standard (Domain + subfolder)
-mainpageURL = addSlashIfNeeded(responseLogin.geturl())
+mainpageURL = addSlashIfNeeded(responseLogin.geturl())  #get mainURL from login response (this is not normal)
 
 domainMoodle = "" 
 if mainpageURL.startswith("https://"):
@@ -546,11 +1032,17 @@ if mainpageURL.startswith("http://"):
 
 domainMoodle = domainMoodle.split("/")[0]
  
-if useSpecpath == False:
+
+if useSpecpath == False:  #get mainURL from Login page link (this is normal)
    mainpageURL = moodlePath
 
 
- #create necessary stuff
+#create rootdir ++++++++++++++ warning danger +++++++++++
+if not os.path.isdir(root_directory):
+   os.makedirs(root_directory)    
+
+
+ #create crealHistoryfile
 if not os.path.isfile(crawlHistoryFile):
    logFileWriter = open(crawlHistoryFile, 'ab')
    logFileWriter.close()
@@ -562,355 +1054,25 @@ logFileReader.close()
 
 
 
-courses = findOwnCourses()
+#find own courses (returns an array)
+courses = findOwnCourses(mainpageURL)
  
 
-if len(courses) == 0:
-   log("Unable to find courses")
-   log("Full page: " + str(CoursesContentsList), 5)
    
 
 #couse loop
+current_dir = normPath(addSlashIfNeeded(root_directory))
 
 for course in courses:
-    #response1 = urllib2.urlopen(course[1], timeout=10)
-   
 
     log("Check course: '" + course[0] + "'")
+    crawlMoodlePage(course[1], course[0], current_dir, mainpageURL + "my/")
+    searchfordumps(normPath(current_dir + "/" + course[0] + "/"))
 
-    try:
-       responseCourseLink = urllib2.urlopen(course[1], timeout=10)
-    except Exception as e:
-       log("Connection lost! Course does not exist!", 2)
-       log("Exception details: " + str(e), 5)
-       continue
 
-    CourseLinkContent = donwloadFile(responseCourseLink)
 
-         
-
-    if "text/html" in responseCourseLink.info().getheader('Content-Type'): 
-       try:
-          loginStatus = checkLoginStatus(CourseLinkContent) 
-       except Exception as e:
-          log("Connection lost! It is not possible to connect to moodle!", 3)
-          log("Exception details: " + str(e), 5)
-          continue
-
-       if loginStatus == 0:
-          continue
-       elif loginStatus == 2:
-          log("Recheck Course: '" + course[0] + "'", 4)
-          try:
-             responseCourseLink = urllib2.urlopen(course[1], timeout=10)
-          except Exception as e:
-             log("Connection lost! Course does not exist!", 3)
-             log("Exception details: " + str(e), 5)
-             continue
-     
-          CourseLinkContent = donwloadFile(responseCourseLink)
-          
-       #elif loginStatus == 3:
-          #this should not heppend
-          #mh maybe continue ?  
-
-       CourseSoup = BeautifulSoup(CourseLinkContent, "lxml") 
-
- 
-
-    if not course[1] in logFile:
-       logFileWriter = open(crawlHistoryFile, 'ab')
-       logFileWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " Crawler log file for: "+ course[1] + "\n")
-       logFileWriter.close()
-       logFileReader = open(crawlHistoryFile, 'rb')
-       logFile = logFileReader.read()
-       logFileReader.close()
-
- 
-    course_links_Soup = CourseSoup.find(id="region-main")
+searchfordumps(current_dir)
 
 
  
-    if course_links_Soup is None:
-       log("Unable detect a Course")  #Maybe save the page standalone
-       log("Full page: " +  str(CourseSoup), 5)
-       continue
-   
- 
-    course_links = course_links_Soup.find_all('a')
-
-
-    current_dir = normPath(addSlashIfNeeded(root_directory) + course[0] )
-    for link in course_links:
-        hrefCourseFile = link.get('href')
-
-        if hrefCourseFile is None or hrefCourseFile == "":
-             log("There went something wrong, this is an empty link.", 3)
-             continue
- 
-
-        # Checking only resources... Ignoring forum and folders, etc
-        #if "/pluginfile.php/" in hrefCourseFile or "/resource/" in hrefCourseFile  or "/mod/page/" in hrefCourseFile or "/folder/" in hrefCourseFile:
-        
-        if not hrefCourseFile.startswith("https://") and not hrefCourseFile.startswith("http://") and not hrefCourseFile.startswith("www."):
-           if hrefCourseFile.startswith('/'):
-              hrefCourseFile = course[1][:(len(course[1]) - len(course[1].split('/')[-1])) - 1] + hrefCourseFile
-           else:
-              hrefCourseFile = course[1][:len(course[1]) - len(course[1].split('/')[-1])] + hrefCourseFile
-        
-
-        
-        log("Found Link: " + hrefCourseFile, 2)
-        if usehistory == "true" and hrefCourseFile in logFile:
-           log("This link was crawled in the past. I will not recrawl it, change the settings if you want to recrawl it.", 3)
-           continue
-
-        #log("found: " + hrefCourseFile + " in " + course[0])
-        #cj1 = cookielib.CookieJar()
-        #opener1 = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj1))
-        #opener1.addheaders = [('User-agent', 'HeyThanksForWatchingThisAgenet')]
-        #urllib2.install_opener(opener1)
-        #req1 = urllib2.Request(authentication_url, data)
-        #resp = urllib2.urlopen(req1, timeout=10)
- 
-
-        isexternlink = False
-
-        if not domainMoodle in hrefCourseFile:
-           log("This is an external link.", 2)
-           #log("I will try to find more links on the external page! This will fail maybe.", 4) 
-           
-           if not os.path.isdir(current_dir):
-              os.makedirs(current_dir)   
-           
-           externalLinkPath = normPath(addSlashIfNeeded(current_dir) + "external-links.log")
-          
-
-           if os.path.isfile(externalLinkPath):
-              externalLinkReadeer = io.open(externalLinkPath, 'rb')
-              externallinks = externalLinkReadeer.read()
-              externalLinkReadeer.close()
-              if not hrefCourseFile in externallinks:
-                 log("I will store it in the '" + externalLinkPath + "' file.", 4)
-                 externalLinkWriter = io.open(externalLinkPath, 'ab')
-                 externalLinkWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " "+ hrefCourseFile + "\n")
-                 externalLinkWriter.close()
-                 
-
-              else:
-                 log("This link was stored in the '" + externalLinkPath + "' file earlier.", 5)
-
-
-           else:
-              log("I will store it in the '" + externalLinkPath + "' file.", 4)
-              externalLinkWriter = io.open(externalLinkPath, 'ab')
-              externalLinkWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " "+ hrefCourseFile + "\n")
-              externalLinkWriter.close()
- 
-           logFileWriter = io.open(crawlHistoryFile, 'ab')
-           logFileWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " External: "+ hrefCourseFile + " saved to '" + externalLinkPath + "'\n")
-           logFileWriter.close()
-           logFileReader = io.open(crawlHistoryFile, 'rb')
-           logFile = logFileReader.read()
-           logFileReader.close()
-
-           isexternlink = True
-           if downloadExternals == "false":
-              log("Ups this is an external link. I do not crawl external links. Change the settings if you want to crawl external links.", 3)
-              continue
-
-
-        if crawlforum == "false" and "/forum/" in hrefCourseFile:
-           log("Ups this is a forum. I do not crawl this forum. Change the settings if you want to crawl forums.", 3)
-           continue
-
-        #webFileCourseFile = urllib2.urlopen(hrefCourseFile, timeout=10)
-        try:
-           webFileCourseFile = urllib2.urlopen(hrefCourseFile, timeout=10)
-        except Exception as e:
-           log("Connection lost! Link does not exist!", 3)
-           log("Exception details: " + str(e), 5)
-           continue
-        
-        webFileContent = donwloadFile(webFileCourseFile)
-
-        
-        if "text/html" in webFileCourseFile.info().getheader('Content-Type'):
-           if not isexternlink:
-              try:
-                 loginStatus = checkLoginStatus(webFileContent)
-                 
-              except Exception as e:
-                 log("Connection lost! It is not possible to connect to moodle!", 3)
-                 log("Exception details: " + str(e), 5)
-                 continue
-
-              if loginStatus == 0:
-                  continue
-              elif loginStatus == 2:
-                 try:
-                    webFileCourseFile = urllib2.urlopen(hrefCourseFile, timeout=10)
-                 except Exception as e:
-                    log("Connection lost! Link does not exist!", 3)
-                    log("Exception details: " + str(e), 5)
-                    continue
-                 
-                     
-                 webFileContent = donwloadFile(webFileCourseFile)  
-  
-               #elif loginStatus == 3:
-                  #this should not heppend
-                  #mh maybe continue ?  
-        
-           webFileSoup = BeautifulSoup(webFileContent, "lxml") 
-    
-
-        #webfileurlCourseFile = webFileCourseFile.geturl().split('/')[-1].split('?')[0].encode('ascii', 'ignore').replace('/', '|').replace('\\', '|').replace(' ', '_')
-
-        webfileurlCourseFile = decodeFilename(webFileCourseFile.geturl().split('/')[-1].split('?')[0]).strip("-")
-
-        trapscount = 0
-         
-        
-        if "text/html" in webFileCourseFile.info().getheader('Content-Type') or webfileurlCourseFile[-4:] == ".php" or webfileurlCourseFile[-4:] == ".html":
-          log("It is a  folder! Try to find more links!", 2)
-          
-          trap_links_region = webFileSoup.find(id="region-main")
-
-          if not trap_links_region is None:
-    
-             trap_links = trap_links_region.find_all('a')
-                  
-             myTitle = webFileSoup.title.string
-             
-             #myTitle = myTitle.encode('ascii', 'ignore').replace('/', '|').replace('\\', '|').replace(' ', '_').replace('.', '_')
-   
-
-             myTitle = decodeFilename(myTitle).replace(course[0], '').strip("-")
-
-             sub_dir = normPath( addSlashIfNeeded(root_directory) + course[0] + "/" + myTitle )
-   
-             for traplink in trap_links:
-               hrefT = traplink.get('href')
-                  
-               if hrefT is None or hrefT == "":
-                    log("There went something wrong, this is an empty link.", 3)
-                    continue
-   
-               # Checking only resources... Ignoring forum and folders, etc
-               #if "/pluginfile.php/" in hrefT or "/resource/" in hrefT:
-               if not hrefT.startswith("https://") and not hrefT.startswith("http://") and not hrefT.startswith("www."):
-                  if hrefT.startswith('/'):
-                     hrefT = hrefCourseFile[:(len(hrefCourseFile) - len(hrefCourseFile.split('/')[-1])) - 1] + hrefT
-                  else:
-                     hrefT = hrefCourseFile[:len(hrefCourseFile) - len(hrefCourseFile.split('/')[-1])] + hrefT
-               
-                  
-   
-               trapscount = trapscount + 1
-               log("Found link in folder: " + hrefT, 2)
-               if usehistory == "true" and hrefT in logFile:
-                 log("This link was crawled in the past. I will not recrawl it, change the settings if you want to recrawl it.", 3)
-                 continue
-   
-               isexternLinkT = False
-   
-               if not domainMoodle in hrefT: 
-                  log("This is an external link.", 4)
-
-
-                  if not os.path.isdir(sub_dir):
-                     os.makedirs(sub_dir)    
-
-                  externalLinkPath = normPath(addSlashIfNeeded(sub_dir) + "external-links.log")
-
-                  if os.path.isfile(externalLinkPath):
-                     externalLinkReadeer = io.open(externalLinkPath, 'rb')
-                     externallinks = externalLinkReadeer.read()
-                     externalLinkReadeer.close()
-                     if not hrefT in externallinks: 
-                        log("I will store it in the '" + externalLinkPath + "' file", 4)
-                        externalLinkWriter = io.open(externalLinkPath, 'ab')
-                        externalLinkWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " "+ hrefT + "\n")
-                        externalLinkWriter.close()
-                     else:
-                        log("This link was stored in the '" + externalLinkPath + "' file earlier.", 5)
-       
-                  else: 
-                     log("I will store it in the '" + externalLinkPath + "' file", 4)
-                     externalLinkWriter = io.open(externalLinkPath, 'ab')
-                     externalLinkWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " "+ hrefT + "\n")
-                     externalLinkWriter.close()
-
-                  logFileWriter = io.open(crawlHistoryFile, 'ab')
-                  logFileWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " External: "+ hrefCourseFile + " saved to '" + externalLinkPath + "'\n")
-                  logFileWriter.close()
-                  logFileReader = io.open(crawlHistoryFile, 'rb')
-                  logFile = logFileReader.read()
-                  logFileReader.close()
-
-                  isexternLinkT = True
-                  if downloadExternals == "false":
-                     log("Ups this is an external link. I do not crawl external links. Change the settings if you want to crawl external links.", 3)
-                     continue
-   
-               try:
-                  webFileTrap = urllib2.urlopen(hrefT, timeout=10)
-               except Exception as e:
-                  log("Connection lost! File does not exist!", 3)
-                  log("Exception details: " + str(e), 5)
-                  continue
-    
-              # webFileTrapContent = donwloadFile(webFileTrap)
-   
-               
-               webFileTrapContent = donwloadFile(webFileTrap)   
-   
-               if not isexternLinkT and "text/html" in webFileTrap.info().getheader('Content-Type'):
-                  try:
-                     loginStatus = checkLoginStatus(webFileTrapContent)
-                     
-                  except Exception as e:
-                     log("Connection lost! It is not possible to connect to moodle!", 3)
-                     log("Exception details: " + str(e), 5)
-                     continue
-
-                  if loginStatus == 0:
-                      continue
-                  elif loginStatus == 2:
-                     try:
-                       webFileTrap = urllib2.urlopen(hrefT, timeout=10)
-                     except Exception as e:
-                       log("Connection lost! Link does not exist!", 3)
-                       log("Exception details: " + str(e), 5)
-                       continue
-                       
-                     webFileTrapContent = donwloadFile(webFileTrap)  
-      
-                   #elif loginStatus == 3:
-                      #this should not heppend
-                      #mh maybe continue ?  
-            
-               webfileTrapurl = decodeFilename(webFileTrap.geturl().split('/')[-1].split('?')[0]).strip("-")
-               # webfileTrapurl = webFileTrap.geturl().split('/')[-1].split('?')[0].encode('ascii', 'ignore').replace('/', '|').replace('\\', '|').replace(' ', '_')
-    
-               saveFile(webfileTrapurl, sub_dir, webFileTrapContent, webFileTrap, hrefT)
-
-          else:
-             log("This page seems not to be a folder.", 4)             
-                      
-                   
-                       
-        if trapscount == 0:
-           if webfileurlCourseFile[-4:] == ".php" or webfileurlCourseFile[-4:] == ".html":
-              log("Ups no link was found in this folder!", 3)
- 
-           log("Try to save the page: " + hrefCourseFile, 4)
-           
-           saveFile(webfileurlCourseFile, current_dir, webFileContent, webFileCourseFile, hrefCourseFile) 
-
-    #find dublication in folder  current_dir
-    searchfordumps(current_dir)
-
-
 log("Update Complete")
