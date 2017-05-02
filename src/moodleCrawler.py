@@ -704,7 +704,7 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0):
        parentDir = ""
        wrongParameter = True
  
-    log("Check page: '" + pagelink + "'' named: '" + pagename + "' found on: '" + calledFrom + "'' depth: " + str(depth), 2) 
+    log("Check page: '" + pagelink + "' named: '" + pagename + "' found on: '" + calledFrom + "' depth: " + str(depth), 2) 
    
     if depth > maxdepth:
        log("Max depth is reached! Please change the max depth if you want to crawl this link.", 2)
