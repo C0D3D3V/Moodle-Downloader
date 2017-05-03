@@ -728,8 +728,8 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0):
           return
        else:
           pagelink = calledFrom[:len(calledFrom) - len(calledFrom.split('/')[-1])] + pagelink
-  
 
+    pagelink = pagelink.split("#")[0]
 
     #check crawl history
     global logFile
