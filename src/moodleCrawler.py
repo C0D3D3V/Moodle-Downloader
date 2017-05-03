@@ -723,9 +723,13 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0):
     if not pagelink.startswith("https://") and not pagelink.startswith("http://") and not pagelink.startswith("www."):
        if pagelink.startswith('/'):
           pagelink = calledFrom[:(len(calledFrom) - len(calledFrom.split('/')[-1])) - 1] + pagelink
+       elif pagelink.startswith('#'):
+          pagelink = calledFrom + pagelink
        else:
           pagelink = calledFrom[:len(calledFrom) - len(calledFrom.split('/')[-1])] + pagelink
   
+
+
     #check crawl history
     global logFile
     if usehistory == "true" and pagelink in logFile:
