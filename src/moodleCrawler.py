@@ -724,7 +724,8 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0):
        if pagelink.startswith('/'):
           pagelink = calledFrom[:(len(calledFrom) - len(calledFrom.split('/')[-1])) - 1] + pagelink
        elif pagelink.startswith('#'):
-          pagelink = calledFrom + pagelink
+          log("This is an bad link. I will not crawl it. It tries to kidding me.", 3)
+          return
        else:
           pagelink = calledFrom[:len(calledFrom) - len(calledFrom.split('/')[-1])] + pagelink
   
