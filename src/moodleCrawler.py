@@ -77,6 +77,13 @@ crawlwiki = checkQuotationMarks(conf.get("crawl", "wiki")) #/wiki/
 usehistory = checkQuotationMarks(conf.get("crawl", "history")) #do not recrawl
 loglevel = checkQuotationMarks(conf.get("crawl", "loglevel"))
 downloadExternals = checkQuotationMarks(conf.get("crawl", "externallinks"))
+findallduplicates = checkQuotationMarks(conf.get("crawl", "findallduplicates"))
+findduplicates = checkQuotationMarks(conf.get("crawl", "findduplicates"))
+deleteduplicates = checkQuotationMarks(conf.get("crawl", "deleteduplicates"))
+
+
+downloadcoursepages = checkQuotationMarks(conf.get("crawl", "downloadcoursepages"))
+informationaboutduplicates = checkQuotationMarks(conf.get("crawl", "informationaboutduplicates"))
 maxdepth = checkQuotationMarks(conf.get("crawl", "maxdepth"))
 
 
@@ -633,10 +640,47 @@ def searchfordumps(pathtoSearch):
         log('Original is %s' % d[0], 1)
         for f in d[1:]:
             i = i + 1
-            log('Deleting %s' % f, 1)
-            os.remove(f) 
+            if deleteduplicates == "true":
+               log('Deleting %s' % f, 1)
+               os.remove(f) 
+            if informationaboutduplicates == "true":
+               logDuplicates(f, d[0])
 
 
+
+
+#log Duplicates
+def logDuplicates(dubPath, oriPath):
+   fileName = dubPath.split(os.sep)[-1]
+   dubDir = dubPath[:(len(dubPath) - len(fileName) )]
+
+   if not os.path.isdir(dubDir):
+      os.makedirs(dubDir)   
+   
+   dubLogPath = normPath(addSlashIfNeeded(dubDir) + "duplicates.log")
+
+
+   if os.path.isfile(dubLogPath):
+      dubLogReadeer = io.open(dubLogPath, 'rb')
+      dubLog = dubLogReadeer.read()
+      dubLogReadeer.close()
+      if not dubPath in dubLog:
+         log('I will store information about the duplicates in the "File://' + dubLogPath + '" file.', 4)
+         dubLogWriter = io.open(dubLogPath, 'ab')
+         dubLogWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " "+ dubPath + " was found in this place " + oriPath + "\n")
+         dubLogWriter.close()
+         
+
+      else:
+         log('This duplicates were found before and loged in the "File://' + dubLogPath + '" file earlier. Inform the project maintainer pleace.', 5)
+
+   else:
+      log('I will store information about the duplicates in the ""File://' + dubLogPath + '" file.', 4)
+      dubLogWriter = io.open(dubLogPath, 'ab')
+      dubLogWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " "+ dubPath + " was found in this place " + oriPath + "\n")
+      dubLogWriter.close()
+
+   
 
 #log External Link toLog file and File in Folder
 def logExternalLink(extlink, extLinkDir):
@@ -918,6 +962,10 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0):
          if "/folder/" in pagelink  or "/url/" in pagelink  or "/resource/" in pagelink or "/assign/" in pagelink:
             doSave = False
 
+         if not downloadcoursepages == "true" and "/course/view.php" in pagelink:
+            doSave = False
+
+
          #remove in every moodle page the action modules
 
 
@@ -1098,11 +1146,12 @@ for course in courses:
 
     log("Check course: '" + course[0] + "'")
     crawlMoodlePage(course[1], course[0], current_dir, mainpageURL + "my/")
-    searchfordumps(normPath(current_dir + "/" + course[0] + "/"))
+    if findduplicates == "true":
+       searchfordumps(normPath(current_dir + "/" + course[0] + "/"))
 
 
-
-searchfordumps(current_dir)
+if findallduplicates == "true":
+   searchfordumps(current_dir)
 
 
  

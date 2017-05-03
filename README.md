@@ -17,6 +17,11 @@ Set the following in the file `config.ini` before running the script
 - `maxdepth` : The depth how deep the crawler should maximal crawl (default = 9)
 - `loglevel` : Sets the level of logging (0 - less information / 5 - all information)
 - `externallinks` : If external links should get crawled
+- `findduplicates` : If files in course folders should be checked for duplicates (duplicates get not deleted)
+- `findallduplicates` : If files in different courses should be checked for duplicates (duplicates get not deleted)
+- `deleteduplicates` : If duplicates should be deleted. (works only if findduplicates and/or findallduplicates is set) 
+- `informationaboutduplicates` : If a information file should be created in a folder with duplicates. The file inform about the duplicates. (works only if findduplicates and/or findallduplicates is set) 
+- `downloadcoursepages` : If the course main page should be downloaded
 - `crawlcourseslink` : Moodle Course Crawler startpoint (Default course/index.php = all Courses) 
 - `colors` : If colors should be used (For Windows use Cmder to display colors correct. http://cmder.net/)
 
