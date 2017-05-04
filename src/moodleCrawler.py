@@ -35,62 +35,9 @@ import fnmatch
 from datetime import datetime
 from ConfigParser import ConfigParser
 
-
-
-def checkQuotationMarks(settingString):
-   if not settingString is None and settingString[0] == "\"" and settingString[-1] == "\"":
-      settingString = settingString[1:-1]
-   if settingString is None:
-      settingString = ""
-   return settingString
- 
-
-
-def addSlashIfNeeded(settingString):
-   if not settingString is None and not settingString[-1] == "/":
-      settingString = settingString + "/"
-   return settingString
-
-
-
-def normPath(pathSring):
-   return os.path.normpath(pathSring)
-
-
-
-def removeSpaces(pathString):
-   return pathString.replace(" ", "")
-
-
-
-#get Config
-conf = ConfigParser()
-project_dir = os.path.dirname(os.path.abspath(__file__))
-conf.read(os.path.join(project_dir, 'config.ini'))
-  
-
-root_directory = normPath(checkQuotationMarks(conf.get("dirs", "root_dir")))
-username = checkQuotationMarks(conf.get("auth", "username"))
-password = checkQuotationMarks(conf.get("auth", "password"))
-crawlforum = checkQuotationMarks(conf.get("crawl", "forum")) #/forum/
-crawlwiki = checkQuotationMarks(conf.get("crawl", "wiki")) #/wiki/
-usehistory = checkQuotationMarks(conf.get("crawl", "history")) #do not recrawl
-loglevel = checkQuotationMarks(conf.get("crawl", "loglevel"))
-downloadExternals = checkQuotationMarks(conf.get("crawl", "externallinks"))
-findallduplicates = checkQuotationMarks(conf.get("crawl", "findallduplicates"))
-findduplicates = checkQuotationMarks(conf.get("crawl", "findduplicates"))
-deleteduplicates = checkQuotationMarks(conf.get("crawl", "deleteduplicates"))
-
-
-downloadcoursepages = checkQuotationMarks(conf.get("crawl", "downloadcoursepages"))
-informationaboutduplicates = checkQuotationMarks(conf.get("crawl", "informationaboutduplicates"))
-maxdepth = checkQuotationMarks(conf.get("crawl", "maxdepth"))
-
-
-authentication_url = checkQuotationMarks(conf.get("auth", "url"))
-useColors = checkQuotationMarks(conf.get("other", "colors"))
-
-
+#logvariable
+loglevel = 5
+useColors = "false"
 
 
 #Import Libs if needed
@@ -120,45 +67,6 @@ if useColors == "true":
 #utf8 shit
 reload(sys)
 sys.setdefaultencoding('utf-8')
-
-#Setup Dump Search
-filesBySize = {}
-
-
-#Setup Loader
-cj = cookielib.CookieJar()
-opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
-opener.addheaders = [('User-agent', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36')]
-urllib2.install_opener(opener)
-
-
-#setup crawler live history
-visitedPages = set() #hashtable -> faster !?
-
-
-def walker(arg, dirname, fnames):
-    d = os.getcwd()
-    os.chdir(dirname)
-    global filesBySize
-
-    try:
-        fnames.remove('Thumbs')
-    except ValueError:
-        pass
-    for f in fnames:
-        if not os.path.isfile(f):
-            continue
-        size = os.stat(f)[stat.ST_SIZE]
-        #print f + " size: " + str(size)
-        if size < 100:
-            continue
-        if filesBySize.has_key(size):
-            a = filesBySize[size]
-        else:
-            a = []
-            filesBySize[size] = a
-        a.append(os.path.join(dirname, f))
-    os.chdir(d)
 
 
 
@@ -202,6 +110,214 @@ def log(logString, level=0):
          elif level == 5:
             print(datetime.now().strftime('%H:%M:%S') + " " + logString)
 
+
+
+def checkQuotationMarks(settingString):
+   if not settingString is None and settingString[0] == "\"" and settingString[-1] == "\"":
+      settingString = settingString[1:-1]
+   if settingString is None:
+      settingString = ""
+   return settingString
+ 
+
+
+def addSlashIfNeeded(settingString):
+   if not settingString is None and not settingString[-1] == "/":
+      settingString = settingString + "/"
+   return settingString
+
+
+
+def normPath(pathSring):
+   return os.path.normpath(pathSring)
+
+
+
+def removeSpaces(pathString):
+   return pathString.replace(" ", "")
+
+def checkBool(variable, name):
+   if variable == "true" or variable == "false":
+      return
+   else:
+      log("Error parsing Variable. Please check the config file for variable: " + name + ". This variable should be 'true' or 'false'", 0)
+      exit()
+
+
+def checkInt(variable, name):
+   if variable.isdigit():
+      return
+   else:
+      log("Error parsing Variable. Please check the config file for variable: " + name + ". This variable should be an integer", 0)
+      exit()
+
+
+#get Config
+conf = ConfigParser()
+project_dir = os.path.dirname(os.path.abspath(__file__))
+conf.read(os.path.join(project_dir, 'config.ini'))
+  
+try: 
+   root_directory = normPath(checkQuotationMarks(conf.get("dirs", "root_dir")))
+except Exception as e:
+   log("Variable in config is missing. Please set the variable: " + "root_dir" + " in the config file in section: " + "dirs", 0)
+   exit()  
+
+try: 
+   username = checkQuotationMarks(conf.get("auth", "username"))
+except Exception as e:
+   log("Variable in config is missing. Please set the variable: " + "username" + " in the config file in section: " + "auth", 0)
+   exit()  
+
+try: 
+   password = checkQuotationMarks(conf.get("auth", "password"))
+except Exception as e:
+   log("Variable in config is missing. Please set the variable: " + "password" + " in the config file in section: " + "auth", 0)
+   exit()  
+
+try: 
+   crawlforum = checkQuotationMarks(conf.get("crawl", "forum")) #/forum/
+except Exception as e:
+   log("Variable in config is missing. Please set the variable: " + "forum" + " in the config file in section: " + "crawl", 0)
+   exit()  
+
+try: 
+   crawlwiki = checkQuotationMarks(conf.get("crawl", "wiki")) #/wiki/
+except Exception as e:
+   log("Variable in config is missing. Please set the variable: " + "wiki" + " in the config file in section: " + "crawl", 0)
+   exit()  
+
+try: 
+   usehistory = checkQuotationMarks(conf.get("crawl", "history")) #do not recrawl
+except Exception as e:
+   log("Variable in config is missing. Please set the variable: " + "history" + " in the config file in section: " + "crawl", 0)
+   exit()  
+
+try: 
+   downloadExternals = checkQuotationMarks(conf.get("crawl", "externallinks"))
+except Exception as e:
+   log("Variable in config is missing. Please set the variable: " + "externallinks" + " in the config file in section: " + "crawl", 0)
+   exit()  
+
+try: 
+   findallduplicates = checkQuotationMarks(conf.get("crawl", "findallduplicates"))
+except Exception as e:
+   log("Variable in config is missing. Please set the variable: " + "findallduplicates" + " in the config file in section: " + "crawl", 0)
+   exit()   
+
+try: 
+   findduplicates = checkQuotationMarks(conf.get("crawl", "findduplicates"))
+except Exception as e:
+   log("Variable in config is missing. Please set the variable: " + "findduplicates" + " in the config file in section: " + "crawl", 0)
+   exit()   
+
+try: 
+   deleteduplicates = checkQuotationMarks(conf.get("crawl", "deleteduplicates"))
+except Exception as e:
+   log("Variable in config is missing. Please set the variable: " + "deleteduplicates" + " in the config file in section: " + "crawl", 0)
+   exit()   
+
+try: 
+   downloadcoursepages = checkQuotationMarks(conf.get("crawl", "downloadcoursepages"))
+except Exception as e:
+   log("Variable in config is missing. Please set the variable: " + "downloadcoursepages" + " in the config file in section: " + "crawl", 0)
+   exit()  
+
+try: 
+   informationaboutduplicates = checkQuotationMarks(conf.get("crawl", "informationaboutduplicates"))
+except Exception as e:
+   log("Variable in config is missing. Please set the variable: " + "informationaboutduplicates" + " in the config file in section: " + "crawl", 0)
+   exit()  
+
+try: 
+   useColors = checkQuotationMarks(conf.get("other", "colors"))
+except Exception as e:
+   log("Variable in config is missing. Please set the variable: " + "colors" + " in the config file in section: " + "other", 0)
+   exit()  
+
+try: 
+   loglevel = checkQuotationMarks(conf.get("crawl", "loglevel"))
+except Exception as e:
+   log("Variable in config is missing. Please set the variable: " + "loglevel" + " in the config file in section: " + "crawl", 0)
+   exit()  
+
+try: 
+   maxdepth = checkQuotationMarks(conf.get("crawl", "maxdepth"))
+except Exception as e:
+   log("Variable in config is missing. Please set the variable: " + "maxdepth" + " in the config file in section: " + "crawl", 0)
+   exit()  
+
+try: 
+   authentication_url = checkQuotationMarks(conf.get("auth", "url"))
+except Exception as e:
+   log("Variable in config is missing. Please set the variable: " + "url" + " in the config file in section: " + "auth", 0)
+   exit()  
+
+
+ 
+ 
+ 
+
+#check variables:
+if not os.path.isdir(root_directory):
+    log("Error parsing Variable. Please check the config file for variable: root_dir. This variable should be a path to an existing folder.", 0)
+    exit()
+
+checkBool(crawlforum, "forum")
+checkBool(crawlwiki, "wiki")
+checkBool(usehistory, "history")
+checkBool(downloadExternals, "externallinks")
+checkBool(findallduplicates, "findallduplicates")
+checkBool(findduplicates, "findduplicates")
+checkBool(deleteduplicates, "deleteduplicates")
+checkBool(downloadcoursepages, "downloadcoursepages")
+checkBool(informationaboutduplicates, "informationaboutduplicates")
+checkBool(useColors, "colors")
+
+checkInt(loglevel, "loglevel")
+checkInt(maxdepth, "maxdepth")
+
+
+
+
+#Setup Dump Search    
+filesBySize = {}
+
+
+#Setup Loader
+cj = cookielib.CookieJar()
+opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
+opener.addheaders = [('User-agent', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36')]
+urllib2.install_opener(opener)
+
+
+#setup crawler live history
+visitedPages = set() #hashtable -> faster !?
+
+
+def walker(arg, dirname, fnames):
+    d = os.getcwd()
+    os.chdir(dirname)
+    global filesBySize
+
+    try:
+        fnames.remove('Thumbs')
+    except ValueError:
+        pass
+    for f in fnames:
+        if not os.path.isfile(f):
+            continue
+        size = os.stat(f)[stat.ST_SIZE]
+        #print f + " size: " + str(size)
+        if size < 100:
+            continue
+        if filesBySize.has_key(size):
+            a = filesBySize[size]
+        else:
+            a = []
+            filesBySize[size] = a
+        a.append(os.path.join(dirname, f))
+    os.chdir(d)
 
 
 def donwloadFile(downloadFileResponse):
