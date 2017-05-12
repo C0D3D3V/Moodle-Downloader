@@ -31,6 +31,7 @@ import filecmp
 import sys
 import cgi
 import fnmatch
+import datetime as dt
 
 from datetime import datetime
 from ConfigParser import ConfigParser
@@ -359,6 +360,12 @@ def donwloadFile(downloadFileResponse):
    #   log("Downloading a file", 0)
    
    tenmegabyte = 0
+   bytespersec = 0
+   MBbytespersec = 0
+
+   starttime = dt.datetime.now()
+   bytesSineLasteCalc = 0
+
    while True:
        downloadFileContentBuffer = downloadFileResponse.read(81924)
        if not downloadFileContentBuffer: 
@@ -367,19 +374,28 @@ def donwloadFile(downloadFileResponse):
        bytes_so_far += len(downloadFileContentBuffer) 
        downloadFileContent = downloadFileContent + downloadFileContentBuffer
        
+
+       #calc speed
+       endtime = dt.datetime.now()
+       
+       if (endtime - starttime).total_seconds() >= 1:
+          bytespersec = (bytes_so_far - bytesSineLasteCalc) / (endtime - starttime).total_seconds()
+          MBbytespersec = bytespersec / 1024 / 1024
+          starttime = dt.datetime.now()
+          bytesSineLasteCalc = bytes_so_far
+       
+
        if not header: 
          tenmegabyte += 81924
          
          if tenmegabyte >= 10485760:
             tenmegabyte = 0 
-            log("Downloaded %d bytes" % (bytes_so_far), 0)
+            log("Downloaded %d bytes (%dByts/s | %0.2f%%MByts/s)" % (bytes_so_far, bytespersec, MBbytespersec), 0)
          
          log("Downloaded %d bytes" % (bytes_so_far), 5)
            
-       else:
-          percent = float(bytes_so_far) / total_size
-          percent = round(percent*100, 2)
-          progress(bytes_so_far, total_size, "Downloaded %d of %d bytes (%0.2f%%)\r" % (bytes_so_far, total_size, percent))
+       else: 
+          progress(bytes_so_far, total_size, "Downloaded %d of %d bytes (%dByts/s| %0.2fMByts/s)\r" % (bytes_so_far, total_size, bytespersec, MBbytespersec))
             
           
    log("Download complete.", 4)
