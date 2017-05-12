@@ -1022,7 +1022,8 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0):
     isaMoodlePage = False
 
     page_links = None
-
+    course_section = None
+    
     if pageIsHtml == True and isexternlink == False:
        PageSoup = BeautifulSoup(PageLinkContent, "lxml") 
  
@@ -1040,11 +1041,16 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0):
           #only main page
           PageLinkContent = "<!DOCTYPE html> <html>" + str(moodlePageHeader) + "<body class='format-topics path-mod path-mod-assign safari dir-ltr lang-de yui-skin-sam yui3-skin-sam  pagelayout-incourse category-246 has-region-side-pre used-region-side-pre has-region-side-post empty-region-side-post side-pre-only jsenabled'>" + str(page_links_Soup) + "</body></html>"
 
+          if "/course/view.php" in pagelink:
+             course_section = page_links_Soup.select('.section.main.clearfix')
+
+
           page_links = page_links_Soup.find_all('a')
    
 
           pageFoundLinks = len(page_links)
           isaMoodlePage = True 
+
 
 
     #do some filters for moodle pages
@@ -1091,6 +1097,45 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0):
     pageFilePath = "This file was not saved. It is listed here for crawl purposes."
     if doSave:
        pageFilePath = saveFile(pageFileName, pageSaveDir, PageLinkContent, responsePageLink, pagelink)
+
+    if not course_section is None:
+       for one_section in course_section:
+          section_links = one_section.find_all('a')
+          
+          if not section_links is None:
+
+             sectionname = one_section.attrs["aria-label"]
+             if sectionname is None or sectionname == "":
+                continue
+                
+             sectionname = decodeFilename(sectionname).strip("-")
+
+             sectionDir = normPath(addSlashIfNeeded(parentDir) + pagename + "/" + sectionname)
+
+             for link in section_links:
+                hrefPageLink = link.get('href') 
+                nextName = link.text
+                if not page_links is None:
+                   if link in page_links:
+                      page_links.remove(link)
+ 
+                #remove moodle shit (at the end of a link text)
+                removeShit = link.select(".accesshide")
+                if not removeShit is None and len(removeShit) == 1:
+                  removeShitText = removeShit[0].text
+                  if nextName.endswith(removeShitText):
+                      nextName = nextName[:-len(removeShitText)]
+ 
+ 
+                nextName = decodeFilename(nextName).strip("-")
+ 
+ 
+                crawlMoodlePage(hrefPageLink, nextName, sectionDir, pagelink, (depth + 1))
+
+  
+
+
+
 
 
     if not page_links is None:
