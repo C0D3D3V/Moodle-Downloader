@@ -373,6 +373,8 @@ def donwloadFile(downloadFileResponse):
          if tenmegabyte >= 10485760:
             tenmegabyte = 0 
             log("Downloaded %d bytes" % (bytes_so_far), 0)
+         
+         log("Downloaded %d bytes" % (bytes_so_far), 5)
            
        else:
           percent = float(bytes_so_far) / total_size
