@@ -47,23 +47,6 @@ except Exception as e:
    print("Module BeautifulSoup4 is missing!")
    exit(1)
 
-if useColors == "true":
-   try:
-      from colorama import init
-   except Exception as e:
-      print("Module Colorama is missing!")
-      exit(1)
-   
-   try:
-      from termcolor import colored
-   except Exception as e:
-      print("Module Termcolor is missing!")
-      exit(1)
-
-   # use Colorama to make Termcolor work on Windows too
-   init()
-
-
 #utf8 shit
 reload(sys)
 sys.setdefaultencoding('utf-8')
@@ -150,6 +133,19 @@ def checkInt(variable, name):
    else:
       log("Error parsing Variable. Please check the config file for variable: " + name + ". This variable should be an integer", 0)
       exit()
+
+
+
+def progress(count, total, suffix=''):
+    bar_len = 60
+    filled_len = int(round(bar_len * count / float(total)))
+
+    percents = round(100.0 * count / float(total), 1)
+    bar = '=' * filled_len + '-' * (bar_len - filled_len)
+
+    sys.stdout.write('[%s] %s%s ...%s\r' % (bar, percents, '%', suffix))
+    sys.stdout.flush()
+
 
 
 #get Config
@@ -279,6 +275,24 @@ checkInt(maxdepth, "maxdepth")
 
 
 
+#add colors
+if useColors == "true":
+   try:
+      from colorama import init
+   except Exception as e:
+      print("Module Colorama is missing!")
+      exit(1)
+   
+   try:
+      from termcolor import colored
+   except Exception as e:
+      print("Module Termcolor is missing!")
+      exit(1)
+
+   # use Colorama to make Termcolor work on Windows too
+   init()
+
+
 
 #Setup Dump Search    
 filesBySize = {}
@@ -335,12 +349,16 @@ def donwloadFile(downloadFileResponse):
    except Exception as e:
        log("No Content-Length available.", 5)
        header = False # a response doesn't always include the "Content-Length" header
-          
+    
    if header:
        total_size = int(total_size)
          
    bytes_so_far = 0
         
+   #if not header: 
+   #   log("Downloading a file", 0)
+   
+   tenmegabyte = 0
    while True:
        downloadFileContentBuffer = downloadFileResponse.read(81924)
        if not downloadFileContentBuffer: 
@@ -348,14 +366,18 @@ def donwloadFile(downloadFileResponse):
            
        bytes_so_far += len(downloadFileContentBuffer) 
        downloadFileContent = downloadFileContent + downloadFileContentBuffer
-              
+       
        if not header: 
-          log("Downloaded %d bytes" % (bytes_so_far), 5)
+         tenmegabyte += 81924
+         
+         if tenmegabyte >= 10485760:
+            tenmegabyte = 0 
+            log("Downloaded %d bytes" % (bytes_so_far), 0)
            
        else:
           percent = float(bytes_so_far) / total_size
           percent = round(percent*100, 2)
-          log("Downloaded %d of %d bytes (%0.2f%%)\r" % (bytes_so_far, total_size, percent), 5)
+          progress(bytes_so_far, total_size, "Downloaded %d of %d bytes (%0.2f%%)\r" % (bytes_so_far, total_size, percent))
             
           
    log("Download complete.", 4)
@@ -1132,11 +1154,7 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0):
  
                 crawlMoodlePage(hrefPageLink, nextName, sectionDir, pagelink, (depth + 1))
 
-  
-
-
-
-
+   
 
     if not page_links is None:
       for link in page_links:
