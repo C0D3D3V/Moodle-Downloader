@@ -36,6 +36,12 @@ import datetime as dt
 from datetime import datetime
 from ConfigParser import ConfigParser
 
+import gi
+gi.require_version('Notify', '0.7') 
+from gi.repository import Notify
+
+Notify.init("Moodle Crawler")
+
 #logvariable
 loglevel = 5
 useColors = "false"
@@ -138,13 +144,13 @@ def checkInt(variable, name):
 
 
 def progress(count, total, suffix=''):
-    bar_len = 60
+    bar_len = 30
     filled_len = int(round(bar_len * count / float(total)))
 
     percents = round(100.0 * count / float(total), 1)
     bar = '=' * filled_len + '-' * (bar_len - filled_len)
 
-    sys.stdout.write('[%s] %s%s ...%s\r' % (bar, percents, '%', suffix))
+    sys.stdout.write('[%s] %s%% ...%s\r' % (bar, percents, suffix))
     sys.stdout.flush()
 
 
@@ -395,7 +401,7 @@ def donwloadFile(downloadFileResponse):
          log("Downloaded %d bytes" % (bytes_so_far), 5)
            
        else: 
-          progress(bytes_so_far, total_size, "Downloaded %d of %d bytes (%dByts/s| %0.2fMByts/s)\r" % (bytes_so_far, total_size, bytespersec, MBbytespersec))
+          progress(bytes_so_far, total_size, "%d/%dB %0.2fMB/s\r" % (bytes_so_far, total_size, MBbytespersec))
             
           
    log("Download complete.", 4)
@@ -461,6 +467,7 @@ def saveFile(webFileFilename, pathToSave, webFileContent, webFileResponse, webFi
 
    if fileWasDeleted == False:
       log('Creating new file: "File://' +  file_name + '"')
+      Notify.Notification.new("Moodle Crawler: New File found!").show()
    return file_name
 
 
@@ -1071,11 +1078,25 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0):
 
        if not page_links_Soup is None: 
           #build up own moodle page
+
+          [s.decompose() for s in page_links_Soup.select("input[name=sesskey]")]
+          #inputTags = page_links_Soup.select('input')
+          #for inputB in inputTags:
+          #    if inputB.has_attr('sesskey'):
+          #        inputB['sesskey'] = ''
+
+          aTags = page_links_Soup.select('a')
+          for aBad in aTags:
+            if aBad.has_attr('id'):
+              if aBad['id'].startswith("action_link"):
+                  del aBad['id']
+
+          [s.decompose() for s in page_links_Soup.select(".questionflagpostdata")]
+          
+
           #header without script tags
           moodlePageHeader = PageSoup.find("head")
-          [s.extract() for s in moodlePageHeader('script')]
-
-          [s.extract() for s in page_links_Soup.select("input[name=sesskey]")]
+          [s.decompose() for s in moodlePageHeader('script')]
 
 
           #only main page

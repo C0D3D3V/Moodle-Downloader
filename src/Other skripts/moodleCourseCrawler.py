@@ -297,7 +297,7 @@ def crawlCourses(searchIn, ebene = 0, leftlinks = 0):
 
 conf = ConfigParser()
 project_dir = os.path.dirname(os.path.abspath(__file__))
-conf.read(os.path.join(project_dir, 'config.ini'))
+conf.read(os.path.join(project_dir, '../config.ini'))
  
 
 
