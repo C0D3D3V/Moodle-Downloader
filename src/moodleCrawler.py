@@ -154,113 +154,57 @@ def progress(count, total, suffix=''):
     sys.stdout.flush()
 
 
+def checkConf(var, cat, name) 
+  try: 
+     var = checkQuotationMarks(conf.get(cat, name))
+  except Exception as e:
+     log("Variable in config is missing. Please set the variable: " + name + " in the config file in section: " + cat, 0)
+     exit()  
+
 
 #get Config
 conf = ConfigParser()
 project_dir = os.path.dirname(os.path.abspath(__file__))
 conf.read(os.path.join(project_dir, 'config.ini'))
   
-try: 
-   root_directory = normPath(checkQuotationMarks(conf.get("dirs", "root_dir")))
-except Exception as e:
-   log("Variable in config is missing. Please set the variable: " + "root_dir" + " in the config file in section: " + "dirs", 0)
-   exit()  
+ 
+checkConf(root_directory, "dirs", "root_dir")
+root_directory = normPath(root_directory)
 
-try: 
-   username = checkQuotationMarks(conf.get("auth", "username"))
-except Exception as e:
-   log("Variable in config is missing. Please set the variable: " + "username" + " in the config file in section: " + "auth", 0)
-   exit()  
 
-try: 
-   password = checkQuotationMarks(conf.get("auth", "password"))
-except Exception as e:
-   log("Variable in config is missing. Please set the variable: " + "password" + " in the config file in section: " + "auth", 0)
-   exit()  
+checkConf(username, "auth", "username")
 
-try: 
-   crawlforum = checkQuotationMarks(conf.get("crawl", "forum")) #/forum/
-except Exception as e:
-   log("Variable in config is missing. Please set the variable: " + "forum" + " in the config file in section: " + "crawl", 0)
-   exit()  
+checkConf(password, "auth", "password")
 
-try: 
-   crawlwiki = checkQuotationMarks(conf.get("crawl", "wiki")) #/wiki/
-except Exception as e:
-   log("Variable in config is missing. Please set the variable: " + "wiki" + " in the config file in section: " + "crawl", 0)
-   exit()  
+checkConf(loglevel, "auth", "url") 
 
-try: 
-   usehistory = checkQuotationMarks(conf.get("crawl", "history")) #do not recrawl
-except Exception as e:
-   log("Variable in config is missing. Please set the variable: " + "history" + " in the config file in section: " + "crawl", 0)
-   exit()  
+checkConf(crawlforum, "crawl", "forum")
 
-try: 
-   downloadExternals = checkQuotationMarks(conf.get("crawl", "externallinks"))
-except Exception as e:
-   log("Variable in config is missing. Please set the variable: " + "externallinks" + " in the config file in section: " + "crawl", 0)
-   exit()  
+checkConf(crawlwiki, "crawl", "wiki")
 
-try: 
-   findallduplicates = checkQuotationMarks(conf.get("crawl", "findallduplicates"))
-except Exception as e:
-   log("Variable in config is missing. Please set the variable: " + "findallduplicates" + " in the config file in section: " + "crawl", 0)
-   exit()   
+checkConf(usehistory, "crawl", "history")
 
-try: 
-   findduplicates = checkQuotationMarks(conf.get("crawl", "findduplicates"))
-except Exception as e:
-   log("Variable in config is missing. Please set the variable: " + "findduplicates" + " in the config file in section: " + "crawl", 0)
-   exit()   
+checkConf(downloadExternals, "crawl", "externallinks") 
 
-try: 
-   deleteduplicates = checkQuotationMarks(conf.get("crawl", "deleteduplicates"))
-except Exception as e:
-   log("Variable in config is missing. Please set the variable: " + "deleteduplicates" + " in the config file in section: " + "crawl", 0)
-   exit()   
+checkConf(findallduplicates, "crawl", "findallduplicates") 
 
-try: 
-   downloadcoursepages = checkQuotationMarks(conf.get("crawl", "downloadcoursepages"))
-except Exception as e:
-   log("Variable in config is missing. Please set the variable: " + "downloadcoursepages" + " in the config file in section: " + "crawl", 0)
-   exit()  
+checkConf(findduplicates, "crawl", "findduplicates") 
 
-try: 
-   informationaboutduplicates = checkQuotationMarks(conf.get("crawl", "informationaboutduplicates"))
-except Exception as e:
-   log("Variable in config is missing. Please set the variable: " + "informationaboutduplicates" + " in the config file in section: " + "crawl", 0)
-   exit()  
+checkConf(deleteduplicates, "crawl", "deleteduplicates") 
 
-try: 
-   useColors = checkQuotationMarks(conf.get("other", "colors"))
-except Exception as e:
-   log("Variable in config is missing. Please set the variable: " + "colors" + " in the config file in section: " + "other", 0)
-   exit()  
+checkConf(downloadcoursepages, "crawl", "downloadcoursepages") 
 
-try: 
-   loglevel = checkQuotationMarks(conf.get("crawl", "loglevel"))
-except Exception as e:
-   log("Variable in config is missing. Please set the variable: " + "loglevel" + " in the config file in section: " + "crawl", 0)
-   exit()  
+checkConf(informationaboutduplicates, "crawl", "informationaboutduplicates") 
 
-try: 
-   maxdepth = checkQuotationMarks(conf.get("crawl", "maxdepth"))
-except Exception as e:
-   log("Variable in config is missing. Please set the variable: " + "maxdepth" + " in the config file in section: " + "crawl", 0)
-   exit()  
+checkConf(loglevel, "crawl", "loglevel") 
 
-try: 
-   authentication_url = checkQuotationMarks(conf.get("auth", "url"))
-except Exception as e:
-   log("Variable in config is missing. Please set the variable: " + "url" + " in the config file in section: " + "auth", 0)
-   exit()  
+checkConf(loglevel, "crawl", "maxdepth") 
+
+checkConf(useColors, "other", "colors") 
+
 
 
  
- 
- 
-
 #check variables:
 if not os.path.isdir(root_directory):
     log("Error parsing Variable. Please check the config file for variable: root_dir. This variable should be a path to an existing folder.", 0)
@@ -1286,7 +1230,7 @@ LoginSoup = BeautifulSoup(LoginContents, "lxml")
 LoginStatusConntent = LoginSoup.select(".logininfo")
 if LoginStatusConntent is None or len(LoginStatusConntent) == 0 or ("Logout" not in str(LoginStatusConntent[-1]) and "logout" not in str(LoginStatusConntent[-1])): 
    log("Cannot connect to moodle or Moodle has changed. Crawler is not logged in. Check your login data.") 
-   log("Full page: " + str(LoginStatusConntent[-1]), 5)
+  # log("Full page: " + str(LoginStatusConntent[-1]), 5)
    exit(1)
 
 
