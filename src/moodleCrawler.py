@@ -172,32 +172,20 @@ checkConf(root_directory, "dirs", "root_dir")
 root_directory = normPath(root_directory)
 
 
-checkConf(username, "auth", "username")
-
-checkConf(password, "auth", "password")
-
-checkConf(loglevel, "auth", "url") 
+checkConf(username, "auth", "username") 
+checkConf(password, "auth", "password") 
+checkConf(loglevel, "auth", "url")  
 
 checkConf(crawlforum, "crawl", "forum")
-
 checkConf(crawlwiki, "crawl", "wiki")
-
 checkConf(usehistory, "crawl", "history")
-
 checkConf(downloadExternals, "crawl", "externallinks") 
-
 checkConf(findallduplicates, "crawl", "findallduplicates") 
-
 checkConf(findduplicates, "crawl", "findduplicates") 
-
 checkConf(deleteduplicates, "crawl", "deleteduplicates") 
-
 checkConf(downloadcoursepages, "crawl", "downloadcoursepages") 
-
 checkConf(informationaboutduplicates, "crawl", "informationaboutduplicates") 
-
 checkConf(loglevel, "crawl", "loglevel") 
-
 checkConf(loglevel, "crawl", "maxdepth") 
 
 checkConf(useColors, "other", "colors") 
