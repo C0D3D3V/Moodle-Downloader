@@ -35,6 +35,8 @@ import datetime as dt
 
 from datetime import datetime
 from ConfigParser import ConfigParser
+from urlparse import urlparse
+
 
 import gi
 gi.require_version('Notify', '0.7') 
@@ -116,6 +118,11 @@ def addSlashIfNeeded(settingString):
       settingString = settingString + "/"
    return settingString
 
+
+def addQuestionmarkIfNeeded(settingString):
+   if not settingString is None and not settingString[-1] == "?":
+      settingString = settingString + "?"
+   return settingString
 
 
 def normPath(pathSring):
@@ -284,6 +291,7 @@ def donwloadFile(downloadFileResponse):
       log("Faild to download file", 4)
       return ""
 
+   header = False
    try:
        total_size = downloadFileResponse.info().getheader('Content-Length').strip()
        header = True
@@ -414,6 +422,16 @@ def addFileToLog(pageLink, filePath):
    logFileReader = io.open(crawlHistoryFile, 'rb')
    logFile = logFileReader.read()
    logFileReader.close()
+
+
+
+#moodlePage is Content not Soup
+def simpleLoginCheck(moodlePage): 
+ # print moodlePage
+  if moodlePage.find("logout.php") >= 0: 
+    return True 
+  else:
+    return False
 
 
 
@@ -864,14 +882,17 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0):
     #korregiere link falls nicht korrekt
     if not pagelink.startswith("https://") and not pagelink.startswith("http://") and not pagelink.startswith("www."):
        if pagelink.startswith('/'):
-          pagelink = calledFrom[:(len(calledFrom) - len(calledFrom.split('/')[-1])) - 1] + pagelink
+          parsed_uri = urlparse(calledFrom)
+          domain = '{uri.scheme}://{uri.netloc}/'.format(uri=parsed_uri) 
+          pagelink = domain + pagelink[1:] 
        elif pagelink.startswith('#'):
           log("This is an bad link. I will not crawl it. It tries to kidding me.", 3)
           return
        elif pagelink.startswith('mailto'):
           log("This is an bad link. I will not crawl it. It tries to kidding me.", 3)
           return
-       else:
+       else:   
+          #pagelink = calledFrom[:(len(calledFrom) - len(calledFrom.split('/')[-1])) - 1] + pagelink
           pagelink = calledFrom[:len(calledFrom) - len(calledFrom.split('/')[-1])] + pagelink
 
     pagelink = pagelink.split("#")[0]
@@ -1154,7 +1175,10 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0):
        addFileToLog(pagelink, pageFilePath)
 
 
- 
+
+
+
+
 
  
 
@@ -1176,12 +1200,116 @@ payload = {
 }
  
 
+log("Moodle Crawler started working.")
+
 
 if useauthstate == "true":
-   #get real login url
-   #get real payload
+
+  log("Create Auth State Session.", 2)
+
+  req = urllib2.Request(authentication_url)
+
+  try:
+     responseLogin = urllib2.urlopen(req, timeout=10)
+  except Exception as e:
+     log("Connection lost! It is not possible to connect to login page!")
+     log("Exception details: " + str(e), 5)
+     exit(1)
+
+  LoginContents = donwloadFile(responseLogin)
+  
+  LoginSoup = BeautifulSoup(LoginContents, "lxml") 
+
+  formsLogin = LoginSoup.select("form")
+
+  if(not len(formsLogin) == 1):
+    log("This type of AuthState is not yet suportet! Please conntect the Developer and send him this Debug Informations:")
+    log("Debug information - Select formulars: " + formsLogin)
+    exit(1)
+
+  selectForm = formsLogin[0]
+
+  actionLink = selectForm.get("action") 
+
+  inputsLogin = selectForm.select("input")
+
+  if(not len(inputsLogin)== 3):
+    log("This type of AuthState is not yet suportet! Please conntect the Developer and send him this Debug Informations:")
+    log("Debug information - Inputs: " + inputsLogin)
+    exit(1)
 
 
+  if(not inputsLogin[0].get("name") == "AuthState"):
+    log("This type of AuthState is not yet suportet! Please conntect the Developer and send him this Debug Informations:")
+    log("Debug information - Inputs: " + inputsLogin)
+    exit(1)
+
+  authstateValue = inputsLogin[0].get("value")
+  thirdName = inputsLogin[2].get("name")
+  thirdValue = inputsLogin[2].get("value")
+
+
+  log("AuthState action = " + actionLink, 2)
+  log("AuthState = " + authstateValue, 2)
+  log(thirdName + " = " + thirdValue, 2)
+
+
+
+
+  calledFrom = responseLogin.geturl() #get mainURL from login response (this is not normal)
+  pagelink = actionLink  
+
+  if not pagelink.startswith("https://") and not pagelink.startswith("http://") and not pagelink.startswith("www."):
+       if pagelink.startswith('/'): 
+          parsed_uri = urlparse(calledFrom)
+          domain = '{uri.scheme}://{uri.netloc}/'.format(uri=parsed_uri) 
+          pagelink = domain + pagelink[1:] 
+       elif pagelink.startswith('#'):
+          log("This is an bad link. I will not login. It tries to kidding me.", 3)
+          exit(1)
+       elif pagelink.startswith('mailto'):
+          log("This is an bad link. I will not login. It tries to kidding me.", 3)
+          exit(1)
+       else:
+          pagelink = calledFrom[:len(calledFrom) - len(calledFrom.split('/')[-1])] + pagelink
+          #pagelink = calledFrom[:(len(calledFrom) - len(calledFrom.split('/')[-1])) - 1] + pagelink
+
+  actionLink = pagelink
+
+
+  payloadAuthState = {
+    'AuthState': authstateValue,
+    thirdName : thirdValue
+  }
+
+  extaLoginToken =  urllib.urlencode(payloadAuthState) 
+  select_url = addQuestionmarkIfNeeded(actionLink) + extaLoginToken
+  log("Select url = " + select_url)
+
+
+  req = urllib2.Request(select_url)
+
+  try:
+     responseLogin = urllib2.urlopen(req, timeout=10)
+  except Exception as e:
+     log("Connection lost! It is not possible to connect to login page!")
+     log("Exception details: " + str(e), 5)
+     exit(1)
+
+  LoginContents = donwloadFile(responseLogin)
+  
+  LoginSoup = BeautifulSoup(LoginContents, "lxml") 
+
+
+  payload = {
+    'username': username,
+    'password': password,
+    'AuthState': authstateValue 
+  }
+
+  authentication_url = responseLogin.geturl().split("?")[0]
+  log("Authentication url = " + authentication_url)
+      
 
 
 
@@ -1193,7 +1321,6 @@ crawlHistoryFile = normPath(addSlashIfNeeded(root_directory)+ ".crawlhistory.log
 
 
 
-log("Moodle Crawler started working.")
 
 # Connection established?
 log("Try to login...", 2)
@@ -1230,27 +1357,13 @@ if "errorcode=" in responseLogin.geturl():
 #Lookup in the Moodle source if it is standard   ("Logout" on every Page)
 LoginSoup = BeautifulSoup(LoginContents, "lxml") 
 
-
-#debug
-print LoginSoup
-
-
-
- 
-
-
-
-
-
-
-
-
-LoginStatusConntent = LoginSoup.select(".logininfo")
-if LoginStatusConntent is None or len(LoginStatusConntent) == 0 or ("Logout" not in str(LoginStatusConntent[-1]) and "logout" not in str(LoginStatusConntent[-1])): 
-   log("Cannot connect to moodle or Moodle has changed. Crawler is not logged in. Check your login data.") 
+if not simpleLoginCheck(LoginContents):
+  log("Cannot connect to moodle or Moodle has changed. Crawler is not logged in. Check your login data.") 
   # log("Full page: " + str(LoginStatusConntent[-1]), 5)
-   exit(1)
-
+  exit(1)
+ 
+ 
+ 
 
 log("Logged in!", 1)
  
@@ -1261,14 +1374,17 @@ log("Logged in!", 1)
 #Lookup in the Moodle source if it is standard (Domain + subfolder)
 mainpageURL = addSlashIfNeeded(responseLogin.geturl())  #get mainURL from login response (this is not normal)
 
-domainMoodle = "" 
-if mainpageURL.startswith("https://"):
-   domainMoodle = mainpageURL[8:]
+parsed_uri = urlparse(mainpageURL)
+domainMoodle = '{uri.scheme}://{uri.netloc}/'.format(uri=parsed_uri) 
 
-if mainpageURL.startswith("http://"):
-   domainMoodle = mainpageURL[7:]
-
-domainMoodle = domainMoodle.split("/")[0]
+#domainMoodle = ""  
+#if mainpageURL.startswith("https://"):
+#   domainMoodle = mainpageURL[8:]
+#
+#if mainpageURL.startswith("http://"):
+#   domainMoodle = mainpageURL[7:]
+#
+#domainMoodle = domainMoodle.split("/")[0]
  
 
 if useSpecpath == False:  #get mainURL from Login page link (this is normal)
