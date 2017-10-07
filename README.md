@@ -7,23 +7,24 @@ You can change names of downloaded Files and Places them to a different location
 
 Set the following in the file `config.ini` before running the script
 
-- `username` : Moodle Username
-- `password` : Moodle Password
-- `root_dir` : The root directory for where the files are to be stored
-- `url` : URL for moodle authentication
-- `forum` : If forums should also be crawled
-- `wiki` : If wikis should also be crawled
-- `history` : If a history file should be used
-- `maxdepth` : The depth how deep the crawler should maximal crawl (default = 9)
-- `loglevel` : Sets the level of logging (0 - less information / 5 - all information)
-- `externallinks` : If external links should get crawled
-- `findduplicates` : If files in course folders should be checked for duplicates (duplicates get not deleted)
-- `findallduplicates` : If files in different courses should be checked for duplicates (duplicates get not deleted)
-- `deleteduplicates` : If duplicates should be deleted. (works only if findduplicates and/or findallduplicates is set) 
-- `informationaboutduplicates` : If a information file should be created in a folder with duplicates. The file inform about the duplicates. (works only if findduplicates and/or findallduplicates is set) 
-- `downloadcoursepages` : If the course main page should be downloaded
-- `crawlcourseslink` : Moodle Course Crawler startpoint (Default course/index.php = all Courses) 
-- `colors` : If colors should be used (For Windows use Cmder to display colors correct. http://cmder.net/)
+- `username` [String] : Moodle Username
+- `password` [String] : Moodle Password
+- `root_dir` [String] : The path to the directory where the files are to be stored
+- `url` [String] : URL for moodle authentication
+- `useauthstate` [Boolean] : If AuthState should be used for login. This needs to set to true if in the authentication URL the parameter AuthState is set 
+- `forum` [Boolean] : If forums should also be crawled 
+- `wiki` [Boolean] : If wikis should also be crawled 
+- `history` [Boolean] : If a history file should be used 
+- `maxdepth` [Integer] : The depth how deep the crawler should maximal crawl (default = 9) 
+- `loglevel` [Integer] : Sets the level of logging (0 - less information / 5 - all information)
+- `externallinks` [Boolean] : If external links should get crawled
+- `findduplicates` [Boolean] : If files in course folders should be checked for duplicates (duplicates get not deleted)
+- `findallduplicates` [Boolean] : If files in different courses should be checked for duplicates (duplicates get not deleted)
+- `deleteduplicates` [Boolean] : If duplicates should be deleted. (works only if findduplicates and/or findallduplicates is set to true) 
+- `informationaboutduplicates` [Boolean] : If a information file should be created in a folder with duplicates. The file inform about the duplicates. (works only if findduplicates and/or findallduplicates is set)
+- `downloadcoursepages` [Boolean] : If the course main page should be downloaded
+- `crawlcourseslink` [String] : Moodle Course Crawler startpoint (Default course/index.php = all Courses). This is not necessary for the Moodle Crawler Script
+- `colors` [Boolean] : If colors should be used (For Windows use Cmder to display colors correct. http://cmder.net/)
 
 All the files are stored in their respective directories inside the `root_dir` with the names as in moodle.
 
