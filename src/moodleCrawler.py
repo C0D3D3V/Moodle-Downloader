@@ -415,7 +415,7 @@ def saveFile(webFileFilename, pathToSave, webFileContent, webFileResponse, webFi
 
    if fileWasDeleted == False:
       log('Creating new file: "File://' +  file_name + '"')
-      if notifyFound:
+      if notifyFound == "true":
          Notify.Notification.new("Moodle Crawler: New File found!").show()
    return file_name
 
@@ -514,7 +514,7 @@ def findOwnCourses(myCoursesURL):
    
    #Lookup in the Moodle source if it is standard (moodlePath/my/ are my courses)
    try:
-      if crawlallcourses:
+      if crawlallcourses == "true":
          responseCourses = urllib2.urlopen(myCoursesURL + "my/index.php?mynumber=-2", timeout=10) 
       else:
          responseCourses = urllib2.urlopen(myCoursesURL + "my/", timeout=10) 
