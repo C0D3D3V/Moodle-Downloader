@@ -154,9 +154,10 @@ def progress(count, total, suffix=''):
     sys.stdout.flush()
 
 
-def checkConf(var, cat, name) 
+def checkConf(cat, name):
+  global conf
   try: 
-     var = checkQuotationMarks(conf.get(cat, name))
+     return checkQuotationMarks(conf.get(cat, name))
   except Exception as e:
      log("Variable in config is missing. Please set the variable: " + name + " in the config file in section: " + cat, 0)
      exit()  
@@ -166,29 +167,28 @@ def checkConf(var, cat, name)
 conf = ConfigParser()
 project_dir = os.path.dirname(os.path.abspath(__file__))
 conf.read(os.path.join(project_dir, 'config.ini'))
-  
- 
-checkConf(root_directory, "dirs", "root_dir")
+   
+root_directory = checkConf("dirs", "root_dir")
 root_directory = normPath(root_directory)
 
 
-checkConf(username, "auth", "username") 
-checkConf(password, "auth", "password") 
-checkConf(loglevel, "auth", "url")  
+username = checkConf("auth", "username") 
+password = checkConf("auth", "password") 
+loglevel = checkConf("auth", "url")  
 
-checkConf(crawlforum, "crawl", "forum")
-checkConf(crawlwiki, "crawl", "wiki")
-checkConf(usehistory, "crawl", "history")
-checkConf(downloadExternals, "crawl", "externallinks") 
-checkConf(findallduplicates, "crawl", "findallduplicates") 
-checkConf(findduplicates, "crawl", "findduplicates") 
-checkConf(deleteduplicates, "crawl", "deleteduplicates") 
-checkConf(downloadcoursepages, "crawl", "downloadcoursepages") 
-checkConf(informationaboutduplicates, "crawl", "informationaboutduplicates") 
-checkConf(loglevel, "crawl", "loglevel") 
-checkConf(loglevel, "crawl", "maxdepth") 
+crawlforum = checkConf("crawl", "forum")
+crawlwiki = checkConf("crawl", "wiki")
+usehistory = checkConf("crawl", "history")
+downloadExternals = checkConf("crawl", "externallinks") 
+findallduplicates = checkConf("crawl", "findallduplicates") 
+findduplicates = checkConf("crawl", "findduplicates") 
+deleteduplicates = checkConf("crawl", "deleteduplicates") 
+downloadcoursepages = checkConf("crawl", "downloadcoursepages") 
+informationaboutduplicates = checkConf("crawl", "informationaboutduplicates") 
+loglevel = checkConf("crawl", "loglevel") 
+maxdepth = checkConf("crawl", "maxdepth") 
 
-checkConf(useColors, "other", "colors") 
+useColors = checkConf("other", "colors") 
 
 
 
@@ -1214,6 +1214,21 @@ if "errorcode=" in responseLogin.geturl():
 
 #Lookup in the Moodle source if it is standard   ("Logout" on every Page)
 LoginSoup = BeautifulSoup(LoginContents, "lxml") 
+
+
+#debug
+print LoginSoup
+
+
+
+ 
+
+
+
+
+
+
+
 
 LoginStatusConntent = LoginSoup.select(".logininfo")
 if LoginStatusConntent is None or len(LoginStatusConntent) == 0 or ("Logout" not in str(LoginStatusConntent[-1]) and "logout" not in str(LoginStatusConntent[-1])): 
