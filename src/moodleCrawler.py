@@ -183,6 +183,7 @@ username = checkConf("auth", "username")
 password = checkConf("auth", "password") 
 authentication_url = checkConf("auth", "url")  
 useauthstate = checkConf("auth", "useauthstate")  
+reLoginOnFile = checkConf("auth", "reloginonfile")  
 
 crawlallcourses = checkConf("crawl", "allcourses")
 crawlforum = checkConf("crawl", "forum")
@@ -221,6 +222,7 @@ checkBool(informationaboutduplicates, "informationaboutduplicates")
 checkBool(useColors, "colors")
 checkBool(useauthstate, "useauthstate")
 checkBool(notifyFound, "notifications")
+checkBool(reLoginOnFile, "reloginonfile")
 
 checkInt(loglevel, "loglevel")
 checkInt(maxdepth, "maxdepth")
@@ -441,6 +443,15 @@ def simpleLoginCheck(moodlePage):
     return False
 
 
+def simpleMoodleCheck(moodlePage): 
+ # print moodlePage
+  if moodlePage.find("moodle") >= 0: 
+    return True 
+  else:
+    return False
+
+
+
 
 #status:
 # 0 - Not logged in
@@ -567,7 +578,7 @@ def findOwnCourses(myCoursesURL):
    
        #if blockCourse == False:
        courses.append([course_name, course_link])
-       log("Found Course: '" + course_name + "'", 2)
+       log("Found Course: '" + course_name + "'", 1)
 
 
    if len(courses) == 0:
@@ -999,7 +1010,8 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0):
     
      
     #check for login status
-    if pageIsHtml == True:
+    if pageIsHtml == True and reLoginOnFile == "true" and simpleMoodleCheck(PageLinkContent):
+
        try:
           loginStatus = checkLoginStatus(PageLinkContent) 
        except Exception as e:
@@ -1009,7 +1021,7 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0):
 
        if loginStatus == 0:  #Not logged in
           log("Ups, there went something wrong with the moodle login - this is bad. If this happens again please contect the project maintainer.", 0)
-         
+          log("This page could not be crawled: " + pagelink)
           #try to donload anyway ? ++++++++++++++++++++++++++++++++++++
 
           return
@@ -1218,7 +1230,7 @@ log("Moodle Crawler started working.")
 
 if useauthstate == "true":
 
-  log("Create Auth State Session.", 2)
+  log("Create Auth State Session.")
 
   req = urllib2.Request(authentication_url)
 
@@ -1262,9 +1274,9 @@ if useauthstate == "true":
   thirdValue = inputsLogin[2].get("value")
 
 
-  log("AuthState action = " + actionLink, 2)
-  log("AuthState = " + authstateValue, 2)
-  log(thirdName + " = " + thirdValue, 2)
+  log("AuthState action = " + actionLink, 5)
+  log("AuthState = " + authstateValue, 5)
+  log(thirdName + " = " + thirdValue, 5)
 
 
 
@@ -1321,7 +1333,7 @@ if useauthstate == "true":
   }
 
   authentication_url = responseLogin.geturl().split("?")[0]
-  log("Authentication url = " + authentication_url, 2)
+  log("Authentication url = " + authentication_url, 5)
       
 
 
