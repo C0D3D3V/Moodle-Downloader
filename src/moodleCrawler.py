@@ -174,7 +174,7 @@ root_directory = normPath(root_directory)
 
 username = checkConf("auth", "username") 
 password = checkConf("auth", "password") 
-loglevel = checkConf("auth", "url")  
+authentication_url = checkConf("auth", "url")  
 
 crawlforum = checkConf("crawl", "forum")
 crawlwiki = checkConf("crawl", "wiki")
