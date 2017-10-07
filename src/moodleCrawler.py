@@ -198,6 +198,7 @@ loglevel = checkConf("crawl", "loglevel")
 maxdepth = checkConf("crawl", "maxdepth") 
 
 useColors = checkConf("other", "colors") 
+notifyFound = checkConf("other", "notifications") 
 
 
 
@@ -219,6 +220,7 @@ checkBool(downloadcoursepages, "downloadcoursepages")
 checkBool(informationaboutduplicates, "informationaboutduplicates")
 checkBool(useColors, "colors")
 checkBool(useauthstate, "useauthstate")
+checkBool(notifyFound, "notifications")
 
 checkInt(loglevel, "loglevel")
 checkInt(maxdepth, "maxdepth")
@@ -413,7 +415,8 @@ def saveFile(webFileFilename, pathToSave, webFileContent, webFileResponse, webFi
 
    if fileWasDeleted == False:
       log('Creating new file: "File://' +  file_name + '"')
-      Notify.Notification.new("Moodle Crawler: New File found!").show()
+      if notifyFound:
+         Notify.Notification.new("Moodle Crawler: New File found!").show()
    return file_name
 
 

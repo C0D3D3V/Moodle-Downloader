@@ -26,6 +26,7 @@ Set the following in the file `config.ini` before running the script
 - `downloadcoursepages` [Boolean] : If the course main page should be downloaded
 - `crawlcourseslink` [String] : Moodle Course Crawler startpoint (Default course/index.php = all Courses). This is not necessary for the Moodle Crawler Script
 - `colors` [Boolean] : If colors should be used (For Windows use Cmder to display colors correct. http://cmder.net/)
+- `notifications` [Boolean] : If you want to get notified if new files were found
 
 All the files are stored in their respective directories inside the `root_dir` with the names as in moodle.
 
