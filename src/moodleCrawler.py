@@ -175,6 +175,7 @@ root_directory = normPath(root_directory)
 username = checkConf("auth", "username") 
 password = checkConf("auth", "password") 
 authentication_url = checkConf("auth", "url")  
+useauthstate = checkConf("auth", "useauthstate")  
 
 crawlforum = checkConf("crawl", "forum")
 crawlwiki = checkConf("crawl", "wiki")
@@ -208,6 +209,7 @@ checkBool(deleteduplicates, "deleteduplicates")
 checkBool(downloadcoursepages, "downloadcoursepages")
 checkBool(informationaboutduplicates, "informationaboutduplicates")
 checkBool(useColors, "colors")
+checkBool(useauthstate, "useauthstate")
 
 checkInt(loglevel, "loglevel")
 checkInt(maxdepth, "maxdepth")
@@ -433,7 +435,8 @@ def checkLoginStatus(pageContent):
       #Is a relogin needed ? Try to figure out when relogin is needed.
       if "Logout" not in str(LoginStatusConntent[-1]) and "logout" not in str(LoginStatusConntent[-1]):
          log("Try to relogin, connection maybe lost.", 3)
-         
+
+         global req
          try:
             responseLogin = urllib2.urlopen(req, timeout=10)
          except Exception as e:
@@ -1165,10 +1168,22 @@ else:
    useSpecpath = True
    log("This script will probably not work. Please use an authentication URL that ends with /login/index.php or contact the project owner.")
 
+
+
 payload = {
     'username': username,
     'password': password
 }
+ 
+
+
+if useauthstate == "true":
+   #get real login url
+   #get real payload
+
+
+
+
 
 
 data = urllib.urlencode(payload)
