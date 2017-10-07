@@ -444,47 +444,50 @@ def simpleLoginCheck(moodlePage):
 def checkLoginStatus(pageContent):
    PageSoup = BeautifulSoup(pageContent, "lxml") 
    #LoginStatusConntent = PageSoup.find(class_="logininfo")
-   LoginStatusConntent = PageSoup.select(".logininfo")
+   #LoginStatusConntent = PageSoup.select(".logininfo")
 
-   if not LoginStatusConntent is None or len(LoginStatusConntent) == 0:
+   #if not LoginStatusConntent is None or len(LoginStatusConntent) == 0:
    
-      log("Checking login status.", 4)  
-      #Lookup in the Moodle source if it is standard (login / log in on every page)
-      #Is a relogin needed ? Try to figure out when relogin is needed.
-      if "Logout" not in str(LoginStatusConntent[-1]) and "logout" not in str(LoginStatusConntent[-1]):
-         log("Try to relogin, connection maybe lost.", 3)
-
-         global req
-         try:
-            responseLogin = urllib2.urlopen(req, timeout=10)
-         except Exception as e:
-            raise NotGoodErrror(e)
-          
-         LoginContents = donwloadFile(responseLogin)
-          
-          
-         if "errorcode=" in responseLogin.geturl():
-             log("Cannot login. Check your login data.", 3)
-             return 0
-         
-         #Lookup in the Moodle source if it is standard   ("Logout" on every Page)
-         LoginSoup = BeautifulSoup(LoginContents, "lxml") 
-         #LoginStatusConntent = LoginSoup.find(class_="logininfo")
-         LoginStatusConntent = PageSoup.select(".logininfo")
+   
+   log("Checking login status.", 4)  
+   #Lookup in the Moodle source if it is standard (login / log in on every page)
+   #Is a relogin needed ? Try to figure out when relogin is needed.
+   if not simpleLoginCheck(pageContent):
+   #if "Logout" not in str(LoginStatusConntent[-1]) and "logout" not in str(LoginStatusConntent[-1]):
+      log("Try to relogin, connection maybe lost.", 3)
+ 
+      global req
+      try:
+         responseLogin = urllib2.urlopen(req, timeout=10)
+      except Exception as e:
+         raise NotGoodErrror(e)
+       
+      LoginContents = donwloadFile(responseLogin)
+       
+       
+      if "errorcode=" in responseLogin.geturl():
+          log("Cannot login. Check your login data.", 3)
+          return 0
+      
+      #Lookup in the Moodle source if it is standard   ("Logout" on every Page)
+      LoginSoup = BeautifulSoup(LoginContents, "lxml") 
+      #LoginStatusConntent = LoginSoup.find(class_="logininfo")
+      #LoginStatusConntent = PageSoup.select(".logininfo")
+     
+      #if LoginStatusConntent is None or ("Logout" not in str(LoginStatusConntent[-1]) and "logout" not in str(LoginStatusConntent[-1])):  
+      if not simpleLoginCheck(LoginContents):
+          log("Cannot connect to moodle or Moodle has changed. Crawler is not logged in. Check your login data.", 3)
+          return 0
         
-         if LoginStatusConntent is None or ("Logout" not in str(LoginStatusConntent[-1]) and "logout" not in str(LoginStatusConntent[-1])):  
-             log("Cannot connect to moodle or Moodle has changed. Crawler is not logged in. Check your login data.", 3)
-             return 0
-           
-         log("Successfully logged in again.", 4)
-         #reload page  
-         return 2
-      else:
-         log("Crawler is still loged in.", 4)
-         return 1
+      log("Successfully logged in again.", 4)
+      #reload page  
+      return 2
    else:
-      log("No logininfo on this page.", 5)
-      return 3    
+      log("Crawler is still loged in.", 4)
+      return 1
+   #else:
+   #   log("No logininfo on this page.", 5)
+   #   return 3    
 
 
 
