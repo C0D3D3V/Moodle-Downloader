@@ -1289,7 +1289,7 @@ if useauthstate == "true":
 
   extaLoginToken =  urllib.urlencode(payloadAuthState) 
   select_url = addQuestionmarkIfNeeded(actionLink) + extaLoginToken
-  log("Select url = " + select_url)
+  log("Select url = " + select_url, 2)
 
 
   req = urllib2.Request(select_url)
@@ -1313,7 +1313,7 @@ if useauthstate == "true":
   }
 
   authentication_url = responseLogin.geturl().split("?")[0]
-  log("Authentication url = " + authentication_url)
+  log("Authentication url = " + authentication_url, 2)
       
 
 
