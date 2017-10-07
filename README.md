@@ -11,7 +11,7 @@ Set the following in the file `config.ini` before running the script
 - `password` [String] : Moodle Password
 - `root_dir` [String] : The path to the directory where the files are to be stored
 - `url` [String] : URL for moodle authentication
-- `useauthstate` [Boolean] : If AuthState should be used for login. This needs to set to true if in the authentication URL the parameter AuthState is set 
+- `useauthstate` [Boolean] : If AuthState should be used for login. This needs to be set to true if in the authentication URL the parameter AuthState is set 
 - `reloginonfile` [Boolean] : If the crawler should check if it is still logged in, if not it relogin. This is normally not necessary
 - `allcourses` [Boolean] : If all courses should be crawled or only the courses listed on the dashboard
 - `forum` [Boolean] : If forums should also be crawled 
