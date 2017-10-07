@@ -12,6 +12,7 @@ Set the following in the file `config.ini` before running the script
 - `root_dir` [String] : The path to the directory where the files are to be stored
 - `url` [String] : URL for moodle authentication
 - `useauthstate` [Boolean] : If AuthState should be used for login. This needs to set to true if in the authentication URL the parameter AuthState is set 
+- `allcourses` [Boolean] : If all courses should be crawled or only the courses listed on the dashboard
 - `forum` [Boolean] : If forums should also be crawled 
 - `wiki` [Boolean] : If wikis should also be crawled 
 - `history` [Boolean] : If a history file should be used 

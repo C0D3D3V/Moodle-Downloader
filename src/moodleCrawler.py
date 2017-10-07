@@ -184,6 +184,7 @@ password = checkConf("auth", "password")
 authentication_url = checkConf("auth", "url")  
 useauthstate = checkConf("auth", "useauthstate")  
 
+crawlallcourses = checkConf("crawl", "allcourses")
 crawlforum = checkConf("crawl", "forum")
 crawlwiki = checkConf("crawl", "wiki")
 usehistory = checkConf("crawl", "history")
@@ -206,6 +207,7 @@ if not os.path.isdir(root_directory):
     log("Error parsing Variable. Please check the config file for variable: root_dir. This variable should be a path to an existing folder.", 0)
     exit()
 
+checkBool(crawlallcourses, "allcourses")
 checkBool(crawlforum, "forum")
 checkBool(crawlwiki, "wiki")
 checkBool(usehistory, "history")
@@ -509,7 +511,10 @@ def findOwnCourses(myCoursesURL):
    
    #Lookup in the Moodle source if it is standard (moodlePath/my/ are my courses)
    try:
-      responseCourses = urllib2.urlopen(myCoursesURL + "my/", timeout=10)
+      if crawlallcourses:
+         responseCourses = urllib2.urlopen(myCoursesURL + "my/index.php?mynumber=-2", timeout=10) 
+      else:
+         responseCourses = urllib2.urlopen(myCoursesURL + "my/", timeout=10) 
    except Exception as e:
       log("Connection lost! It is not possible to connect to course page! At: " + myCoursesURL)
       log("Exception details: " + str(e), 5)
