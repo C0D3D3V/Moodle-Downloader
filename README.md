@@ -27,6 +27,7 @@ Set the following in the file `config.ini` before running the script
 - `informationaboutduplicates` [Boolean] : If a information file should be created in a folder with duplicates. The file inform about the duplicates. (works only if findduplicates and/or findallduplicates is set)
 - `downloadcoursepages` [Boolean] : If the course main page should be downloaded
 - `crawlcourseslink` [String] : Moodle Course Crawler startpoint (Default course/index.php = all Courses). This is not necessary for the Moodle Crawler Script
+- `dontcrawl` [List] : A list of file extensions, that should not be crawled
 - `colors` [Boolean] : If colors should be used (For Windows use Cmder to display colors correct. http://cmder.net/)
 - `notifications` [Boolean] : If you want to get notified if new files were found
 
