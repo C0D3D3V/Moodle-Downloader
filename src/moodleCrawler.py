@@ -1397,18 +1397,20 @@ log("Logged in!", 1)
 
 #Get moodle base url
 
+mainpageURL = addSlashIfNeeded(base_url)
+
 #Lookup in the Moodle source if it is standard (Domain + subfolder)
 #mainpageURL = responseLogin.geturl()  #get mainURL from login response (this is not normal)
 
 #parsed_uri = urlparse(mainpageURL)
 #domainMoodle = '{uri.scheme}://{uri.netloc}/'.format(uri=parsed_uri) 
- 
+domainMoodle = mainpageURL
+
 #
 #if useSpecpath == False:  #get mainURL from Login page link (this is normal)
 #   mainpageURL = moodlePath
 
 
-mainpageURL = base_url
 
 
 
