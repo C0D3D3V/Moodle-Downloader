@@ -10,7 +10,8 @@ Set the following in the file `config.ini` before running the script
 - `username` [String] : Moodle Username
 - `password` [String] : Moodle Password
 - `root_dir` [String] : The path to the directory where the files are to be stored
-- `url` [String] : URL for moodle authentication
+- `authurl` [String] : URL for moodle authentication. Mostly ends with '/login/index.php'
+- `baseurl` [String] : URL of moodle installation. Could be something like 'https://moodle.someMoodle.de' or 'https://someMoodle.de/moodle/'
 - `useauthstate` [Boolean] : If AuthState should be used for login. This needs to be set to true if in the authentication URL the parameter AuthState is set 
 - `reloginonfile` [Boolean] : If the crawler should check if it is still logged in, if not it relogin. This is normally not necessary
 - `allcourses` [Boolean] : If all courses should be crawled or only the courses listed on the dashboard

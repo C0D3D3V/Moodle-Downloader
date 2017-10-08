@@ -181,7 +181,8 @@ root_directory = normPath(root_directory)
 
 username = checkConf("auth", "username") 
 password = checkConf("auth", "password") 
-authentication_url = checkConf("auth", "url")  
+authentication_url = checkConf("auth", "authurl")  
+base_url = checkConf("auth", "baseurl")  
 useauthstate = checkConf("auth", "useauthstate")  
 reLoginOnFile = checkConf("auth", "reloginonfile")  
 
@@ -1397,23 +1398,20 @@ log("Logged in!", 1)
 #Get moodle base url
 
 #Lookup in the Moodle source if it is standard (Domain + subfolder)
-mainpageURL = addSlashIfNeeded(responseLogin.geturl())  #get mainURL from login response (this is not normal)
+#mainpageURL = responseLogin.geturl()  #get mainURL from login response (this is not normal)
 
-parsed_uri = urlparse(mainpageURL)
-domainMoodle = '{uri.scheme}://{uri.netloc}/'.format(uri=parsed_uri) 
-
-#domainMoodle = ""  
-#if mainpageURL.startswith("https://"):
-#   domainMoodle = mainpageURL[8:]
-#
-#if mainpageURL.startswith("http://"):
-#   domainMoodle = mainpageURL[7:]
-#
-#domainMoodle = domainMoodle.split("/")[0]
+#parsed_uri = urlparse(mainpageURL)
+#domainMoodle = '{uri.scheme}://{uri.netloc}/'.format(uri=parsed_uri) 
  
+#
+#if useSpecpath == False:  #get mainURL from Login page link (this is normal)
+#   mainpageURL = moodlePath
 
-if useSpecpath == False:  #get mainURL from Login page link (this is normal)
-   mainpageURL = moodlePath
+
+mainpageURL = base_url
+
+
+
 
 
 #create rootdir ++++++++++++++ warning danger +++++++++++
