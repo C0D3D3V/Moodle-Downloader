@@ -355,8 +355,8 @@ def donwloadFile(downloadFileResponse):
        else: 
           progress(bytes_so_far, total_size, "%d/%dB %0.2fMB/s\r" % (bytes_so_far, total_size, MBbytespersec))
    
-   #if header:  
-   #   print ""
+   if header:  
+      print ""
           
    log("Download complete.", 4)
    return downloadFileContent
