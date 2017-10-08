@@ -198,6 +198,8 @@ downloadcoursepages = checkConf("crawl", "downloadcoursepages")
 informationaboutduplicates = checkConf("crawl", "informationaboutduplicates") 
 loglevel = checkConf("crawl", "loglevel") 
 maxdepth = checkConf("crawl", "maxdepth") 
+dontcrawl = checkConf("crawl", "dontcrawl") 
+
 
 useColors = checkConf("other", "colors") 
 notifyFound = checkConf("other", "notifications") 
@@ -228,6 +230,7 @@ checkBool(reLoginOnFile, "reloginonfile")
 checkInt(loglevel, "loglevel")
 checkInt(maxdepth, "maxdepth")
 
+listDontCrawl = dontcrawl.split(",")
 
 
 #add colors
@@ -352,8 +355,8 @@ def donwloadFile(downloadFileResponse):
        else: 
           progress(bytes_so_far, total_size, "%d/%dB %0.2fMB/s\r" % (bytes_so_far, total_size, MBbytespersec))
    
-   if header: 
-      print ""         
+   #if header:  
+   #   print ""
           
    log("Download complete.", 4)
    return downloadFileContent
@@ -517,7 +520,13 @@ def decodeFilename(fileName):
   htmlDecode = htmlDecode.replace(':', '-').replace('@', '-').replace('"', '-')
   return htmlDecode
 
-
+def dontCrawlCheck(url):
+   extenstion = url.split("?")[0].split(".")[-1]
+   global listDontCrawl
+   for dont in listDontCrawl:
+      if extenstion == dont:
+         return True
+   return False
 
 #warning this function exit the stript if it could not load the course list page
 #try to crawl all courses from moodlepage/my/
@@ -937,6 +946,8 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0):
     visitedPages.add(pagelink)
 
 
+
+
     #check if this is an external link
     isexternlink = False
 
@@ -961,6 +972,7 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0):
        log("Ups this is a wiki. I do not crawl this wiki. Change the settings if you want to crawl wikis.", 3)
        return
 
+
     #Skip Moodle Pages
     #/user/   = users                               | skipTotaly
     #/badges/ = Auszeichnungen                      | skipTotaly
@@ -974,6 +986,9 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0):
           log("This is a moodle page. But I will skip it because it is not important.", 4)
           return
 
+    if dontCrawlCheck(pagelink):
+       log("This page will not be crawled because it ends with a file extension given in option 'dontcrawl'.", 3)
+       return
 
 
     #try to get a response from link
