@@ -410,7 +410,7 @@ def saveFile(webFileFilename, pathToSave, webFileContent, webFileResponse, webFi
      pdfFile.close()
 
    except Exception as e:
-        log('File was not created: "File://' +  file_name + '"' + "Exception: " + str(e))
+        log('File was not created: "file://' +  file_name + '"' + "Exception: " + str(e))
         return file_name
  
 
@@ -420,7 +420,7 @@ def saveFile(webFileFilename, pathToSave, webFileContent, webFileResponse, webFi
 
 
    if fileWasDeleted == False:
-      log('Creating new file: "File://' +  file_name + '"')
+      log('Creating new file: "file://' +  file_name + '"')
       if notifyFound == "true":
          Notify.Notification.new("Moodle Crawler: New File found!").show()
    return file_name
@@ -514,10 +514,15 @@ def checkLoginStatus(pageContent):
 
 
 def decodeFilename(fileName):
+
   htmlDecode = urllib.unquote(fileName).decode('utf8')
   htmlDecode = htmlDecode.replace('/', '-').replace('\\', '-').replace(' ', '-').replace('#', '-').replace('%', '-').replace('&', '-').replace('{', '-').replace('}', '-').replace('<', '-')
   htmlDecode = htmlDecode.replace('>', '-').replace('*', '-').replace('?', '-').replace('$', '-').replace('!', '-').replace(u'‘', '-').replace('|', '-').replace('=', '-').replace(u'`', '-').replace('+', '-')
   htmlDecode = htmlDecode.replace(':', '-').replace('@', '-').replace('"', '-')
+  old = urllib.unquote(fileName).decode('utf8')
+  if(old != htmlDecode):
+  	log("Changed filename from '" + old + "'' to '" + htmlDecode + "'", 5)
+
   return htmlDecode
 
 def dontCrawlCheck(url):
@@ -608,11 +613,11 @@ def searchfordumpsSpecific(filepath, fileName, filetype, pathtoSearch):
       #pathtoSearch = fileBeginn[:(len(fileBeginn) - len(fileName))]
 
     filesBySizeSpe = {}
-    log('Scanning directory "' + pathtoSearch + '" (file: "File://' + filepath + '", filename: "' + fileName + '", filetype: "' + filetype +'")....' , 5)
+    log('Scanning directory "' + pathtoSearch + '" (file: "file://' + filepath + '", filename: "' + fileName + '", filetype: "' + filetype +'")....' , 5)
     
 
     if not os.path.isfile(filepath):
-        log('Error: "File://' + filepath + '" is not a file.') 
+        log('Error: "file://' + filepath + '" is not a file.') 
         return False
 
     coresize = os.stat(filepath)[stat.ST_SIZE]
@@ -702,7 +707,7 @@ def searchfordumpsSpecific(filepath, fileName, filetype, pathtoSearch):
         if len(d) > 1:
           for f in d:
               if f == filepath:
-                log('Found correct dump - filepath: "File://' + f + '"', 1)
+                log('Found correct dump - filepath: "file://' + f + '"', 1)
                 foundfilepath = True
 
     i = 0
@@ -815,17 +820,17 @@ def logDuplicates(dubPath, oriPath):
       dubLog = dubLogReadeer.read()
       dubLogReadeer.close()
       if not dubPath in dubLog:
-         log('I will store information about the duplicates in the "File://' + dubLogPath + '" file.', 4)
+         log('I will store information about the duplicates in the "file://' + dubLogPath + '" file.', 4)
          dubLogWriter = io.open(dubLogPath, 'ab')
          dubLogWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " "+ dubPath + " was found in this place " + oriPath + "\n")
          dubLogWriter.close()
          
 
       else:
-         log('This duplicates were found before and loged in the "File://' + dubLogPath + '" file earlier. Inform the project maintainer pleace.', 5)
+         log('This duplicates were found before and loged in the "file://' + dubLogPath + '" file earlier. Inform the project maintainer pleace.', 5)
 
    else:
-      log('I will store information about the duplicates in the ""File://' + dubLogPath + '" file.', 4)
+      log('I will store information about the duplicates in the ""file://' + dubLogPath + '" file.', 4)
       dubLogWriter = io.open(dubLogPath, 'ab')
       dubLogWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " "+ dubPath + " was found in this place " + oriPath + "\n")
       dubLogWriter.close()
@@ -845,18 +850,18 @@ def logExternalLink(extlink, extLinkDir):
       externallinks = externalLinkReadeer.read()
       externalLinkReadeer.close()
       if not extlink in externallinks:
-         log('I will store it in the "File://' + externalLinkPath + '" file.', 4)
+         log('I will store it in the "file://' + externalLinkPath + '" file.', 4)
          externalLinkWriter = io.open(externalLinkPath, 'ab')
          externalLinkWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " "+ extlink + "\n")
          externalLinkWriter.close()
          
 
       else:
-         log('This link was stored in the "File://' + externalLinkPath + '" file earlier.', 5)
+         log('This link was stored in the "file://' + externalLinkPath + '" file earlier.', 5)
          boolExternalLinkStored = False
 
    else:
-      log('I will store it in the "File://' + externalLinkPath + '" file.', 4)
+      log('I will store it in the "file://' + externalLinkPath + '" file.', 4)
       externalLinkWriter = io.open(externalLinkPath, 'ab')
       externalLinkWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " "+ extlink + "\n")
       externalLinkWriter.close()
