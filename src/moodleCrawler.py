@@ -47,7 +47,7 @@ Notify.init("Moodle Crawler")
 #logvariable
 loglevel = 5
 useColors = "false"
-
+config_path = 'config.ini'
 
 #Import Libs if needed
 try:
@@ -105,7 +105,8 @@ def log(logString, level=0):
 
 
 def checkQuotationMarks(settingString):
-   if not settingString is None and settingString[0] == "\"" and settingString[-1] == "\"":
+
+   if not settingString is None and  len(settingString) > 2 and settingString[0] == "\"" and settingString[-1] == "\"":
       settingString = settingString[1:-1]
    if settingString is None:
       settingString = ""
@@ -143,7 +144,7 @@ def checkBool(variable, name):
 
 def checkInt(variable, name):
    if variable.isdigit():
-      return
+      return int(variable)
    else:
       log("Error parsing Variable. Please check the config file for variable: " + name + ". This variable should be an integer", 0)
       exit()
@@ -173,7 +174,7 @@ def checkConf(cat, name):
 #get Config
 conf = ConfigParser()
 project_dir = os.path.dirname(os.path.abspath(__file__))
-conf.read(os.path.join(project_dir, 'config.ini'))
+conf.read(os.path.join(project_dir, config_path))
    
 root_directory = checkConf("dirs", "root_dir")
 root_directory = normPath(root_directory)
@@ -199,6 +200,7 @@ informationaboutduplicates = checkConf("crawl", "informationaboutduplicates")
 loglevel = checkConf("crawl", "loglevel") 
 maxdepth = checkConf("crawl", "maxdepth") 
 dontcrawl = checkConf("crawl", "dontcrawl") 
+onlycrawlcourses = checkConf("crawl", "onlycrawlcourses") 
 
 
 useColors = checkConf("other", "colors") 
@@ -227,10 +229,11 @@ checkBool(useauthstate, "useauthstate")
 checkBool(notifyFound, "notifications")
 checkBool(reLoginOnFile, "reloginonfile")
 
-checkInt(loglevel, "loglevel")
-checkInt(maxdepth, "maxdepth")
+loglevel = checkInt(loglevel, "loglevel")
+maxdepth = checkInt(maxdepth, "maxdepth")
 
 listDontCrawl = dontcrawl.split(",")
+listOnlyCrawl = onlycrawlcourses.split(",")
 
 
 #add colors
@@ -527,9 +530,22 @@ def decodeFilename(fileName):
 
 def dontCrawlCheck(url):
    extenstion = url.split("?")[0].split(".")[-1]
-   global listDontCrawl
+   if len(listDontCrawl) == 0:
+      return False
+
    for dont in listDontCrawl:
       if extenstion == dont:
+         return True
+   return False
+
+
+def onlyCrawlCheck(url):
+   id = url.split("?")[1].split("&")[0].split("=")[1]
+   if len(listOnlyCrawl) == 0:
+      return True
+   
+   for only in listOnlyCrawl:
+      if id == only:
          return True
    return False
 
@@ -592,6 +608,10 @@ def findOwnCourses(myCoursesURL):
        #   blockCourse = False
    
        #if blockCourse == False:
+       if not onlyCrawlCheck(course_link):
+          log("This course will not be crawled because the course id is not given in option 'onlycrawlcourses'.", 3)
+          continue
+
        courses.append([course_name, course_link])
        log("Found Course: '" + course_name + "'", 1)
 
@@ -903,9 +923,10 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0):
        parentDir = ""
        wrongParameter = True
  
-    log("Check page: '" + pagelink + "' named: '" + pagename + "' found on: '" + calledFrom + "' depth: " + str(depth), 2) 
-   
-    if depth > maxdepth:
+    log("Check page: '" + pagelink + "' named: '" + pagename + "' found on: '" + calledFrom + "' depth: " + str(depth) + " / " + str(maxdepth), 2) 
+
+ 
+    if depth >= maxdepth:
        log("Max depth is reached! Please change the max depth if you want to crawl this link.", 2)
        return
 
@@ -925,15 +946,19 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0):
           domain = '{uri.scheme}://{uri.netloc}/'.format(uri=parsed_uri) 
           pagelink = domain + pagelink[1:] 
        elif pagelink.startswith('#'):
-          log("This is an bad link. I will not crawl it. It tries to kidding me.", 3)
+          log("This is an bad link. I will not crawl it. It tries to kid me.", 3)
           return
        elif pagelink.startswith('mailto'):
-          log("This is an bad link. I will not crawl it. It tries to kidding me.", 3)
+          log("This is an bad link. I will not crawl it. It tries to kid me.", 3)
           return
        else:   
           #pagelink = calledFrom[:(len(calledFrom) - len(calledFrom.split('/')[-1])) - 1] + pagelink
           pagelink = calledFrom[:len(calledFrom) - len(calledFrom.split('/')[-1])] + pagelink
 
+        
+
+
+ 
     pagelink = pagelink.split("#")[0]
 
     #check crawl history
@@ -986,16 +1011,17 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0):
 
     #/choicegroup/ = gruppen wahl -- unwichtig ?    | skipTotaly
     #/groupexchange/ = gruppenwechsel unwichtig?    | skipTotaly
+    #/calendar/ = kalender -- rekrusion!! unwicht.  | skipTotaly
+    #/glossary/ = wörterbuch -- unwichtig           | skipTotaly
     if isexternlink == False:
-       if "/user/" in pagelink or  "/badges/" in pagelink or "/blog/" in pagelink or "/feedback/" in pagelink or "/choicegroup/" in pagelink or "/groupexchange/" in pagelink:
+       if "/user/" in pagelink or  "/badges/" in pagelink or "/blog/" in pagelink or "/feedback/" in pagelink or "/choicegroup/" in pagelink or "/groupexchange/" in pagelink or "/calender/" in pagelink or "/glossary/" in pagelink:
           log("This is a moodle page. But I will skip it because it is not important.", 4)
           return
 
     if dontCrawlCheck(pagelink):
        log("This page will not be crawled because it ends with a file extension given in option 'dontcrawl'.", 3)
        return
-
-
+    
     #try to get a response from link
     try:
        responsePageLink = urllib2.urlopen(pagelink, timeout=10)
@@ -1152,6 +1178,11 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0):
 
          if not downloadcoursepages == "true" and "/course/view.php" in pagelink:
             doSave = False
+
+        
+    if not pagelink == calledFrom and pagelink.split('?')[0] == calledFrom.split('?')[0]: 
+       log("Changing paramter detected! Recrusion posible!", 3)
+
 
 
          #remove in every moodle page the action modules
@@ -1311,10 +1342,10 @@ if useauthstate == "true":
           domain = '{uri.scheme}://{uri.netloc}/'.format(uri=parsed_uri) 
           pagelink = domain + pagelink[1:] 
        elif pagelink.startswith('#'):
-          log("This is an bad link. I will not login. It tries to kidding me.", 3)
+          log("This is an bad link. I will not login. It tries to kid me.", 3)
           exit(1)
        elif pagelink.startswith('mailto'):
-          log("This is an bad link. I will not login. It tries to kidding me.", 3)
+          log("This is an bad link. I will not login. It tries to kid me.", 3)
           exit(1)
        else:
           pagelink = calledFrom[:len(calledFrom) - len(calledFrom.split('/')[-1])] + pagelink
