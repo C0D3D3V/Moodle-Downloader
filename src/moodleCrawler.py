@@ -530,7 +530,7 @@ def decodeFilename(fileName):
 
 def dontCrawlCheck(url):
    extenstion = url.split("?")[0].split(".")[-1]
-   if len(listDontCrawl) == 0:
+   if dontcrawl == "":
       return False
 
    for dont in listDontCrawl:
@@ -541,7 +541,7 @@ def dontCrawlCheck(url):
 
 def onlyCrawlCheck(url):
    id = url.split("?")[1].split("&")[0].split("=")[1]
-   if len(listOnlyCrawl) == 0:
+   if onlycrawlcourses == "":
       return True
    
    for only in listOnlyCrawl:
@@ -1179,10 +1179,11 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0):
          if not downloadcoursepages == "true" and "/course/view.php" in pagelink:
             doSave = False
 
-        
     if not pagelink == calledFrom and pagelink.split('?')[0] == calledFrom.split('?')[0]: 
        log("Changing paramter detected! Recrusion posible!", 3)
-
+       if isaMoodlePage:
+          log("Stopping recrusion, this is an experimental feature!! If you do missing files, contact the project maintainer! (Not implemented yet :P)", 1)
+          #depth = 7
 
 
          #remove in every moodle page the action modules
