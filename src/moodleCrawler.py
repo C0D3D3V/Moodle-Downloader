@@ -3,18 +3,20 @@
 
 #  Copyright 2017 Daniel Vogt
 #
-#   Licensed under the Apache License, Version 2.0 (the "License");
-#   you may not use this file except in compliance with the License.
-#   You may obtain a copy of the License at
+#   This file is part of Moodle-Crawler.
 #
-#       http://www.apache.org/licenses/LICENSE-2.0
+#   Moodle-Crawler is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
 #
-#   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#   See the License for the specific language governing permissions and
-#   limitations under the License.
-
+#   Moodle-Crawler is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with Moodle-Crawler.  If not, see <http://www.gnu.org/licenses/>.
 
 import cookielib
 import urllib2
@@ -201,8 +203,9 @@ loglevel = checkConf("crawl", "loglevel")
 maxdepth = checkConf("crawl", "maxdepth") 
 dontcrawl = checkConf("crawl", "dontcrawl") 
 onlycrawlcourses = checkConf("crawl", "onlycrawlcourses") 
+dontcrawlcourses = checkConf("crawl", "dontcrawlcourses")
 
-
+ 
 useColors = checkConf("other", "colors") 
 notifyFound = checkConf("other", "notifications") 
 
@@ -232,9 +235,9 @@ checkBool(reLoginOnFile, "reloginonfile")
 loglevel = checkInt(loglevel, "loglevel")
 maxdepth = checkInt(maxdepth, "maxdepth")
 
+listOnlyCrawlCourses = onlycrawlcourses.split(",")
+listDontCrawlCourses = dontcrawlcourses.split(",")
 listDontCrawl = dontcrawl.split(",")
-listOnlyCrawl = onlycrawlcourses.split(",")
-
 
 #add colors
 if useColors == "true":
@@ -539,13 +542,23 @@ def dontCrawlCheck(url):
    return False
 
 
-def onlyCrawlCheck(url):
+def onlyCrawlCoursesCheck(url):
    id = url.split("?")[1].split("&")[0].split("=")[1]
    if onlycrawlcourses == "":
       return True
    
-   for only in listOnlyCrawl:
+   for only in listOnlyCrawlCourses:
       if id == only:
+         return True
+   return False
+
+def dontCrawlCoursesCheck(url):
+   id = url.split("?")[1].split("&")[0].split("=")[1]
+   if dontcrawlcourses == "":
+      return False
+   
+   for dont in listDontCrawlCourses:
+      if id == dont:
          return True
    return False
 
@@ -608,9 +621,14 @@ def findOwnCourses(myCoursesURL):
        #   blockCourse = False
    
        #if blockCourse == False:
-       if not onlyCrawlCheck(course_link):
-          log("This course will not be crawled because the course id is not given in option 'onlycrawlcourses'.", 3)
+       if not onlyCrawlCoursesCheck(course_link):
+          log("Course " + course_name + " will not be crawled because the course id is not given in option 'onlycrawlcourses'.", 3)
           continue
+
+       if dontCrawlCoursesCheck(course_link):
+          log("Course" + course_name +" will not be crawled because the course id is given in option 'dontcrawlcourses'.", 3)
+          continue
+
 
        courses.append([course_name, course_link])
        log("Found Course: '" + course_name + "'", 1)
