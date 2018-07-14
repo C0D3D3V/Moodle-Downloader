@@ -1137,6 +1137,8 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0, forbidre
 
           [s.decompose() for s in page_links_Soup.select(".questionflagpostdata")]
           
+          #fix broken html ... remove navigation
+          [s.decompose() for s in page_links_Soup.select("aside")]
 
           #header without script tags
           moodlePageHeader = PageSoup.find("head")
@@ -1151,7 +1153,7 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0, forbidre
 
 
           page_links = page_links_Soup.find_all('a')
-   
+        
 
           pageFoundLinks = len(page_links)
           isaMoodlePage = True 
@@ -1204,6 +1206,7 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0, forbidre
           if pagelink.split('?')[0] in forbidrecrusionfor:
             log("Stopping recrusion! If you do missing files, set the option 'antirecrusion' to 'false'.", 1)
             visitedPages.remove(pagelink)
+            #TODO: add pagelink to a recrawl recruive list... 
             return
           else:
             forbidrecrusionforNew.append(pagelink.split('?')[0])
