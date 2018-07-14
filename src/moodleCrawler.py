@@ -537,7 +537,7 @@ def dontCrawlCheck(url):
    if dontcrawl == "":
       return False
 
-   if extension in listDontCrawl:
+   if not extension is None and extension in listDontCrawl:
       return True
    return False
 
@@ -547,7 +547,7 @@ def onlyCrawlCoursesCheck(url):
    if onlycrawlcourses == "":
       return True
    
-   if coursId in listOnlyCrawlCourses:
+   if not coursId is None and coursId in listOnlyCrawlCourses:
       return True
    return False
 
@@ -556,7 +556,7 @@ def dontCrawlCoursesCheck(url):
    if dontcrawlcourses == "":
       return False
    
-   if coursId in listDontCrawlCourses:
+   if not coursId is None and coursId in listDontCrawlCourses:
       return True
    return False
 
