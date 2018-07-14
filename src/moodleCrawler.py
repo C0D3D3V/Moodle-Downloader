@@ -204,7 +204,7 @@ maxdepth = checkConf("crawl", "maxdepth")
 dontcrawl = checkConf("crawl", "dontcrawl") 
 onlycrawlcourses = checkConf("crawl", "onlycrawlcourses") 
 dontcrawlcourses = checkConf("crawl", "dontcrawlcourses")
-
+antirecrusion = checkConf("crawl", "antirecrusion")
  
 useColors = checkConf("other", "colors") 
 notifyFound = checkConf("other", "notifications") 
@@ -231,6 +231,7 @@ checkBool(useColors, "colors")
 checkBool(useauthstate, "useauthstate")
 checkBool(notifyFound, "notifications")
 checkBool(reLoginOnFile, "reloginonfile")
+checkBool(antirecrusion, "antirecrusion")
 
 loglevel = checkInt(loglevel, "loglevel")
 maxdepth = checkInt(maxdepth, "maxdepth")
@@ -1199,9 +1200,9 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0):
 
     if not pagelink == calledFrom and pagelink.split('?')[0] == calledFrom.split('?')[0]: 
        log("Changing paramter detected! Recrusion posible!", 3)
-       if isaMoodlePage:
-          log("Stopping recrusion, this is an experimental feature!! If you do missing files, contact the project maintainer! (Not implemented yet :P)", 1)
-          #depth = 7
+       if isaMoodlePage and antirecrusion == "true":
+          log("Stopping recrusion, this is an experimental feature!! If you do missing files, set the option 'antirecrusion' to 'false'.", 1)
+          return
 
 
          #remove in every moodle page the action modules
