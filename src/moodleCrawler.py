@@ -537,30 +537,27 @@ def dontCrawlCheck(url):
    if dontcrawl == "":
       return False
 
-   for dont in listDontCrawl:
-      if extenstion == dont:
-         return True
+   if extension in listDontCrawl:
+      return True
    return False
 
 
 def onlyCrawlCoursesCheck(url):
-   id = url.split("?")[1].split("&")[0].split("=")[1]
+   coursId = url.split("?")[1].split("&")[0].split("=")[1]
    if onlycrawlcourses == "":
       return True
    
-   for only in listOnlyCrawlCourses:
-      if id == only:
-         return True
+   if coursId in listOnlyCrawlCourses:
+      return True
    return False
 
 def dontCrawlCoursesCheck(url):
-   id = url.split("?")[1].split("&")[0].split("=")[1]
+   coursId = url.split("?")[1].split("&")[0].split("=")[1]
    if dontcrawlcourses == "":
       return False
    
-   for dont in listDontCrawlCourses:
-      if id == dont:
-         return True
+   if coursId in listDontCrawlCourses:
+      return True
    return False
 
 #warning this function exit the stript if it could not load the course list page
@@ -919,7 +916,7 @@ def logExternalLink(extlink, extLinkDir):
 
 
 #try to crawl all links on a moodle page. And runs rekursive this funktion on it
-def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0):
+def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0, forbidrecrusionfor=[]):
 
     if calledFrom is None or calledFrom == "":
        log("Something went wrong! CalledFrom is empty!", 2) 
@@ -1197,15 +1194,22 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0):
 
          if not downloadcoursepages == "true" and "/course/view.php" in pagelink:
             doSave = False
-
+    
+         #remove in every moodle page the action modules
+    
+    forbidrecrusionforNew = forbidrecrusionfor[:]
     if not pagelink == calledFrom and pagelink.split('?')[0] == calledFrom.split('?')[0]: 
        log("Changing paramter detected! Recrusion posible!", 3)
        if isaMoodlePage and antirecrusion == "true":
-          log("Stopping recrusion, this is an experimental feature!! If you do missing files, set the option 'antirecrusion' to 'false'.", 1)
-          return
+          if pagelink.split('?')[0] in forbidrecrusionfor:
+            log("Stopping recrusion! If you do missing files, set the option 'antirecrusion' to 'false'.", 1)
+            visitedPages.remove(pagelink)
+            return
+          else:
+            forbidrecrusionforNew.append(pagelink.split('?')[0])
 
 
-         #remove in every moodle page the action modules
+
 
 
     pageFilePath = "This file was not saved. It is listed here for crawl purposes."
@@ -1244,7 +1248,7 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0):
                 nextName = decodeFilename(nextName).strip("-")
  
  
-                crawlMoodlePage(hrefPageLink, nextName, sectionDir, pagelink, (depth + 1))
+                crawlMoodlePage(hrefPageLink, nextName, sectionDir, pagelink, (depth + 1), forbidrecrusionforNew)
 
    
 
@@ -1264,7 +1268,7 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0):
          nextName = decodeFilename(nextName).strip("-")
 
 
-         crawlMoodlePage(hrefPageLink, nextName, pageDir, pagelink, (depth + 1))
+         crawlMoodlePage(hrefPageLink, nextName, pageDir, pagelink, (depth + 1), forbidrecrusionforNew)
 
   
     # add Link to crawler history
