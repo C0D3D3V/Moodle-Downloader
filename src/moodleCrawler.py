@@ -533,7 +533,7 @@ def decodeFilename(fileName):
   return htmlDecode
 
 def dontCrawlCheck(url):
-   extenstion = url.split("?")[0].split(".")[-1]
+   extension = url.split("?")[0].split(".")[-1]
    if dontcrawl == "":
       return False
 
