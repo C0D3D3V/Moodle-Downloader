@@ -903,7 +903,7 @@ URL=""" + extlink)
             else:
                 externalLinkWriter.write("""[Desktop Entry]
 Encoding=UTF-8
-Name=Link to                     """ + extname + """                 
+Name=""" + extname                  
 Type=Link
 URL=""" + extlink + """
 Icon=text-html
