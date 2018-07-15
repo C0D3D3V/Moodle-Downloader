@@ -396,10 +396,11 @@ def saveFile(webFileFilename, pathToSave, webFileContent, webFileResponse, webFi
    fileName = fileBeginn.split(os.sep)[-1]
    pathtoSearch = fileBeginn[:(len(fileBeginn) - len(fileName))]
 
+   fileend = file_name.split('.')[-1]
+   filebegin = file_name[:(len(file_name) - len(fileend)) - 1]
+
    if os.path.isfile(file_name): 
-      fileend = file_name.split('.')[-1]
-      filebegin = file_name[:(len(file_name) - len(fileend)) - 1]
-           
+                 
       ii = 1
       while True:
        new_name = filebegin + "_" + str(ii) + "." + fileend
@@ -419,9 +420,12 @@ def saveFile(webFileFilename, pathToSave, webFileContent, webFileResponse, webFi
    except Exception as e:
         log('File was not created: "file://' +  file_name + '"' + "Exception: " + str(e))
         return file_name
- 
 
+
+    
    fileWasDeleted = False
+  
+
    if dublicatedName:
       fileWasDeleted = searchfordumpsSpecific(file_name,fileName ,filetype, pathtoSearch)
 
@@ -674,7 +678,7 @@ def searchfordumpsSpecific(filepath, fileName, filetype, pathtoSearch):
         else:
             a = []
             filesBySizeSpe[size] = a
-        a.append(os.path.join(pathtoSearch, f))
+        a.append(f)
    
     log('Finding potential dupes...', 4)
     potentialDupes = []
@@ -690,10 +694,10 @@ def searchfordumpsSpecific(filepath, fileName, filetype, pathtoSearch):
           continue
 
         log('Testing %d files of size %d...' % (len(inFiles), k), 5)
-        for fileName in inFiles:
-            if not os.path.isfile(fileName):
+        for fileNameSingle in inFiles:
+            if not os.path.isfile(fileNameSingle):
                 continue
-            aFile = file(fileName, 'r')
+            aFile = file(fileNameSingle, 'r')
             hasher = md5.new(aFile.read(1024))
             hashValue = hasher.digest()
             if hashes.has_key(hashValue):
@@ -701,9 +705,9 @@ def searchfordumpsSpecific(filepath, fileName, filetype, pathtoSearch):
                 if type(x) is not trueType:
                     outFiles.append(hashes[hashValue])
                     hashes[hashValue] = True
-                outFiles.append(fileName)
+                outFiles.append(fileNameSingle)
             else:
-                hashes[hashValue] = fileName
+                hashes[hashValue] = fileNameSingle
             aFile.close()
         if len(outFiles):
             potentialDupes.append(outFiles)
@@ -717,9 +721,9 @@ def searchfordumpsSpecific(filepath, fileName, filetype, pathtoSearch):
     for aSet in potentialDupes:
         outFiles = []
         hashes = {}
-        for fileName in aSet:
-            log('Scanning file "%s"...' % fileName, 5)
-            aFile = file(fileName, 'r')
+        for fileNameSingle in aSet:
+            log('Scanning file "%s"...' % fileNameSingle, 5)
+            aFile = file(fileNameSingle, 'r')
             hasher = md5.new()
             while True:
                 r = aFile.read(4096)
@@ -731,13 +735,14 @@ def searchfordumpsSpecific(filepath, fileName, filetype, pathtoSearch):
             if hashes.has_key(hashValue):
                 if not len(outFiles):
                     outFiles.append(hashes[hashValue])
-                outFiles.append(fileName)
+                outFiles.append(fileNameSingle)
             else:
-                hashes[hashValue] = fileName
+                hashes[hashValue] = fileNameSingle
         if len(outFiles):
             dupes.append(outFiles)
   
     foundfilepath = False
+    foundDupes = None
     for d in dupes:
         log('Test for correct dumps', 5)
         if len(d) > 1:
@@ -745,12 +750,20 @@ def searchfordumpsSpecific(filepath, fileName, filetype, pathtoSearch):
               if f == filepath:
                 log('Found correct dump - filepath: "file://' + f + '"', 1)
                 foundfilepath = True
+                foundDupes = d    
 
-    i = 0
-    for d in dupes:
-        log('Original is %s' % d[0], 1)
-        for f in d[1:]:
-            i = i + 1
+    
+    #old ... deletes all founds :/
+    #for d in dupes:
+    #    log('Original is %s' % d[0], 1)
+    #    for f in d[1:]:
+    #        log('Deleting %s' % f, 1)
+    #        os.remove(f) 
+
+    #delete only searched tupple
+    if not foundDupes is None: 
+        log('Original is %s' % foundDupes[0], 1)
+        for f in foundDupes[1:]:
             log('Deleting %s' % f, 1)
             os.remove(f) 
 
