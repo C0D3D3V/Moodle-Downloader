@@ -874,37 +874,61 @@ def logDuplicates(dubPath, oriPath):
    
 
 #log External Link toLog file and File in Folder
-def logExternalLink(extlink, extLinkDir):
-   if not os.path.isdir(extLinkDir):
+def logExternalLink(extlink, extname, extLinkDir):
+    if not os.path.isdir(extLinkDir):
       os.makedirs(extLinkDir)   
-   
-   externalLinkPath = normPath(addSlashIfNeeded(extLinkDir) + "external-links.log")
-   boolExternalLinkStored = True
 
-   if os.path.isfile(externalLinkPath):
-      externalLinkReadeer = io.open(externalLinkPath, 'rb')
-      externallinks = externalLinkReadeer.read()
-      externalLinkReadeer.close()
-      if not extlink in externallinks:
-         log('I will store it in the "file://' + externalLinkPath + '" file.', 4)
-         externalLinkWriter = io.open(externalLinkPath, 'ab')
-         externalLinkWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " "+ extlink + "\n")
-         externalLinkWriter.close()
+    file_name = normPath(addSlashIfNeeded(extLinkDir) + extname + ".desktop")
+    if os.name == "nt":
+        file_name = normPath(addSlashIfNeeded(extLinkDir) + extname + ".URL")
+        
+    boolExternalLinkStored = True
+
+
+ 
+    new_name = file_name
+    fileend = file_name.split('.')[-1]
+    filebegin = file_name[:(len(file_name) - len(fileend)) - 1]
+    
+      
+    ii = 1
+    while True:
+        if not os.path.isfile(new_name):
+            file_name = new_name
+            log('I will store it in the "file://' + file_name + '" file.', 4)
+            externalLinkWriter = io.open(file_name, 'ab')
+            if os.name == "nt":
+                externalLinkWriter.write(""""[InternetShortcut]
+URL=""" + extlink)
+            else:
+                externalLinkWriter.write("""[Desktop Entry]
+Encoding=UTF-8
+Name=Link to                     """ + extname + """                 
+Type=Link
+URL=""" + extlink + """
+Icon=text-html
+Name[en_US]=""" + extname)
+
+            externalLinkWriter.close()
+            break
+        else:
+            externalLinkReadeer = io.open(new_name, 'rb')
+            externallinks = externalLinkReadeer.read()
+            externalLinkReadeer.close()
+            if extlink in externallinks:
+                file_name = new_name
+                log('This link was stored in the "file://' + file_name + '" file earlier.', 5)
+                boolExternalLinkStored = False
+                break;
+        
+        new_name = filebegin + "_" + str(ii) + "." + fileend
+        ii += 1
+
+    
          
-
-      else:
-         log('This link was stored in the "file://' + externalLinkPath + '" file earlier.', 5)
-         boolExternalLinkStored = False
-
-   else:
-      log('I will store it in the "file://' + externalLinkPath + '" file.', 4)
-      externalLinkWriter = io.open(externalLinkPath, 'ab')
-      externalLinkWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " "+ extlink + "\n")
-      externalLinkWriter.close()
-
-   if boolExternalLinkStored == True:
+    if boolExternalLinkStored == True:
       logFileWriter = io.open(crawlHistoryFile, 'ab')
-      logFileWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " External: "+ extlink + " saved to '" + externalLinkPath + "'\n")
+      logFileWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " External: "+ extlink + " saved to '" + file_name + "'\n")
       logFileWriter.close()
       global logFile
       logFileReader = io.open(crawlHistoryFile, 'rb')
@@ -1000,7 +1024,8 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0, forbidre
     if not domainMoodle in pagelink:
        log("This is an external link.", 2)
        
-       logExternalLink(pagelink, parentDir)
+       
+       logExternalLink(pagelink, pagename, parentDir)
        
        isexternlink = True
        if downloadExternals == "false":
@@ -1068,6 +1093,20 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0, forbidre
     if isexternlink == False and pageIsHtml == True:
        pageFileName = pagename + ".html"
 
+
+    #stop recrusion
+    forbidrecrusionforNew = forbidrecrusionfor[:]
+    if not pagelink == calledFrom and pagelink.split('?')[0] == calledFrom.split('?')[0]: 
+       log("Changing paramter detected! Recrusion posible!", 3)
+       if antirecrusion == "true":
+          if pagelink.split('?')[0] in forbidrecrusionfor:
+            log("Stopping recrusion! If you do missing files, set the option 'antirecrusion' to 'false'.", 1)
+            visitedPages.remove(pagelink)
+            #TODO: add pagelink to a recrawl recruive list... 
+            return
+          else:
+            forbidrecrusionforNew.append(pagelink.split('?')[0])
+    
 
     PageLinkContent = donwloadFile(responsePageLink)
     
@@ -1199,17 +1238,7 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0, forbidre
     
          #remove in every moodle page the action modules
     
-    forbidrecrusionforNew = forbidrecrusionfor[:]
-    if not pagelink == calledFrom and pagelink.split('?')[0] == calledFrom.split('?')[0]: 
-       log("Changing paramter detected! Recrusion posible!", 3)
-       if isaMoodlePage and antirecrusion == "true":
-          if pagelink.split('?')[0] in forbidrecrusionfor:
-            log("Stopping recrusion! If you do missing files, set the option 'antirecrusion' to 'false'.", 1)
-            visitedPages.remove(pagelink)
-            #TODO: add pagelink to a recrawl recruive list... 
-            return
-          else:
-            forbidrecrusionforNew.append(pagelink.split('?')[0])
+   
 
 
 
@@ -1270,8 +1299,13 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0, forbidre
 
          nextName = decodeFilename(nextName).strip("-")
 
-
-         crawlMoodlePage(hrefPageLink, nextName, pageDir, pagelink, (depth + 1), forbidrecrusionforNew)
+         nextParentDir = pageDir
+         if "/url/" in pagelink:
+            nextParentDir = normPath(addSlashIfNeeded(parentDir))
+            nextName = pagename
+         
+         
+         crawlMoodlePage(hrefPageLink, nextName, nextParentDir, pagelink, (depth + 1), forbidrecrusionforNew)
 
   
     # add Link to crawler history
