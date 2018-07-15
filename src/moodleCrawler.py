@@ -396,10 +396,11 @@ def saveFile(webFileFilename, pathToSave, webFileContent, webFileResponse, webFi
    fileName = fileBeginn.split(os.sep)[-1]
    pathtoSearch = fileBeginn[:(len(fileBeginn) - len(fileName))]
 
+   fileend = file_name.split('.')[-1]
+   filebegin = file_name[:(len(file_name) - len(fileend)) - 1]
+
    if os.path.isfile(file_name): 
-      fileend = file_name.split('.')[-1]
-      filebegin = file_name[:(len(file_name) - len(fileend)) - 1]
-           
+                 
       ii = 1
       while True:
        new_name = filebegin + "_" + str(ii) + "." + fileend
@@ -419,9 +420,12 @@ def saveFile(webFileFilename, pathToSave, webFileContent, webFileResponse, webFi
    except Exception as e:
         log('File was not created: "file://' +  file_name + '"' + "Exception: " + str(e))
         return file_name
- 
 
+
+    
    fileWasDeleted = False
+  
+
    if dublicatedName:
       fileWasDeleted = searchfordumpsSpecific(file_name,fileName ,filetype, pathtoSearch)
 
@@ -738,6 +742,7 @@ def searchfordumpsSpecific(filepath, fileName, filetype, pathtoSearch):
             dupes.append(outFiles)
   
     foundfilepath = False
+    foundDupes = None
     for d in dupes:
         log('Test for correct dumps', 5)
         if len(d) > 1:
@@ -745,14 +750,21 @@ def searchfordumpsSpecific(filepath, fileName, filetype, pathtoSearch):
               if f == filepath:
                 log('Found correct dump - filepath: "file://' + f + '"', 1)
                 foundfilepath = True
+                foundDupes = d    
 
-    i = 0
-    for d in dupes:
-        log('Original is %s' % d[0], 1)
-        for f in d[1:]:
-            i = i + 1
-            log('Deleting %s' % f, 1)
-            os.remove(f) 
+    
+    #old ... deletes all founds :/
+    #for d in dupes:
+    #    log('Original is %s' % d[0], 1)
+    #    for f in d[1:]:
+    #        log('Deleting %s' % f, 1)
+    #        os.remove(f) 
+
+    #delete only searched tupple 
+    log('Original is %s' % foundDupes[0], 1)
+    for f in foundDupes[1:]:
+        log('Deleting %s' % f, 1)
+        os.remove(f) 
 
     return foundfilepath
 
