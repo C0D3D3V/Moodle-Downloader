@@ -874,11 +874,11 @@ def logDuplicates(dubPath, oriPath):
    
 
 #log External Link toLog file and File in Folder
-def logExternalLink(extlink, extLinkDir):
+def logExternalLink(extlink, extname, extLinkDir):
    if not os.path.isdir(extLinkDir):
       os.makedirs(extLinkDir)   
    
-   externalLinkPath = normPath(addSlashIfNeeded(extLinkDir) + "external-links.log")
+   externalLinkPath = normPath(addSlashIfNeeded(extLinkDir) + extname + ".link")
    boolExternalLinkStored = True
 
    if os.path.isfile(externalLinkPath):
@@ -1000,7 +1000,8 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0, forbidre
     if not domainMoodle in pagelink:
        log("This is an external link.", 2)
        
-       logExternalLink(pagelink, parentDir)
+       
+       logExternalLink(pagelink, pagename, parentDir)
        
        isexternlink = True
        if downloadExternals == "false":
@@ -1068,6 +1069,20 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0, forbidre
     if isexternlink == False and pageIsHtml == True:
        pageFileName = pagename + ".html"
 
+
+    #stop recrusion
+    forbidrecrusionforNew = forbidrecrusionfor[:]
+    if not pagelink == calledFrom and pagelink.split('?')[0] == calledFrom.split('?')[0]: 
+       log("Changing paramter detected! Recrusion posible!", 3)
+       if antirecrusion == "true":
+          if pagelink.split('?')[0] in forbidrecrusionfor:
+            log("Stopping recrusion! If you do missing files, set the option 'antirecrusion' to 'false'.", 1)
+            visitedPages.remove(pagelink)
+            #TODO: add pagelink to a recrawl recruive list... 
+            return
+          else:
+            forbidrecrusionforNew.append(pagelink.split('?')[0])
+    
 
     PageLinkContent = donwloadFile(responsePageLink)
     
@@ -1199,17 +1214,7 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0, forbidre
     
          #remove in every moodle page the action modules
     
-    forbidrecrusionforNew = forbidrecrusionfor[:]
-    if not pagelink == calledFrom and pagelink.split('?')[0] == calledFrom.split('?')[0]: 
-       log("Changing paramter detected! Recrusion posible!", 3)
-       if isaMoodlePage and antirecrusion == "true":
-          if pagelink.split('?')[0] in forbidrecrusionfor:
-            log("Stopping recrusion! If you do missing files, set the option 'antirecrusion' to 'false'.", 1)
-            visitedPages.remove(pagelink)
-            #TODO: add pagelink to a recrawl recruive list... 
-            return
-          else:
-            forbidrecrusionforNew.append(pagelink.split('?')[0])
+   
 
 
 
@@ -1270,8 +1275,13 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0, forbidre
 
          nextName = decodeFilename(nextName).strip("-")
 
-
-         crawlMoodlePage(hrefPageLink, nextName, pageDir, pagelink, (depth + 1), forbidrecrusionforNew)
+         nextParentDir = pageDir
+         if "/url/" in pagelink:
+            nextParentDir = normPath(addSlashIfNeeded(parentDir))
+            nextName = pagename
+         
+         
+         crawlMoodlePage(hrefPageLink, nextName, nextParentDir, pagelink, (depth + 1), forbidrecrusionforNew)
 
   
     # add Link to crawler history
