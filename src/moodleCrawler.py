@@ -678,7 +678,7 @@ def searchfordumpsSpecific(filepath, fileName, filetype, pathtoSearch):
         else:
             a = []
             filesBySizeSpe[size] = a
-        a.append(os.path.join(pathtoSearch, f))
+        a.append(f)
    
     log('Finding potential dupes...', 4)
     potentialDupes = []
@@ -694,10 +694,10 @@ def searchfordumpsSpecific(filepath, fileName, filetype, pathtoSearch):
           continue
 
         log('Testing %d files of size %d...' % (len(inFiles), k), 5)
-        for fileName in inFiles:
-            if not os.path.isfile(fileName):
+        for fileNameSingle in inFiles:
+            if not os.path.isfile(fileNameSingle):
                 continue
-            aFile = file(fileName, 'r')
+            aFile = file(fileNameSingle, 'r')
             hasher = md5.new(aFile.read(1024))
             hashValue = hasher.digest()
             if hashes.has_key(hashValue):
@@ -705,9 +705,9 @@ def searchfordumpsSpecific(filepath, fileName, filetype, pathtoSearch):
                 if type(x) is not trueType:
                     outFiles.append(hashes[hashValue])
                     hashes[hashValue] = True
-                outFiles.append(fileName)
+                outFiles.append(fileNameSingle)
             else:
-                hashes[hashValue] = fileName
+                hashes[hashValue] = fileNameSingle
             aFile.close()
         if len(outFiles):
             potentialDupes.append(outFiles)
@@ -721,9 +721,9 @@ def searchfordumpsSpecific(filepath, fileName, filetype, pathtoSearch):
     for aSet in potentialDupes:
         outFiles = []
         hashes = {}
-        for fileName in aSet:
-            log('Scanning file "%s"...' % fileName, 5)
-            aFile = file(fileName, 'r')
+        for fileNameSingle in aSet:
+            log('Scanning file "%s"...' % fileNameSingle, 5)
+            aFile = file(fileNameSingle, 'r')
             hasher = md5.new()
             while True:
                 r = aFile.read(4096)
@@ -735,9 +735,9 @@ def searchfordumpsSpecific(filepath, fileName, filetype, pathtoSearch):
             if hashes.has_key(hashValue):
                 if not len(outFiles):
                     outFiles.append(hashes[hashValue])
-                outFiles.append(fileName)
+                outFiles.append(fileNameSingle)
             else:
-                hashes[hashValue] = fileName
+                hashes[hashValue] = fileNameSingle
         if len(outFiles):
             dupes.append(outFiles)
   
