@@ -760,11 +760,12 @@ def searchfordumpsSpecific(filepath, fileName, filetype, pathtoSearch):
     #        log('Deleting %s' % f, 1)
     #        os.remove(f) 
 
-    #delete only searched tupple 
-    log('Original is %s' % foundDupes[0], 1)
-    for f in foundDupes[1:]:
-        log('Deleting %s' % f, 1)
-        os.remove(f) 
+    #delete only searched tupple
+    if not foundDupes is None: 
+        log('Original is %s' % foundDupes[0], 1)
+        for f in foundDupes[1:]:
+            log('Deleting %s' % f, 1)
+            os.remove(f) 
 
     return foundfilepath
 
