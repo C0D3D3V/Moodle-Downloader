@@ -389,7 +389,6 @@ def saveFile(webFileFilename, pathToSave, webFileContent, webFileResponse, webFi
    if not os.path.isdir(pathToSave):
       os.makedirs(pathToSave)
 
-   dublicatedName = False
 
    filetype = "." + file_name.split('.')[-1]
    fileBeginn = file_name[:(len(file_name) - len(filetype))]
@@ -406,7 +405,6 @@ def saveFile(webFileFilename, pathToSave, webFileContent, webFileResponse, webFi
        new_name = filebegin + "_" + str(ii) + "." + fileend
        if not os.path.isfile(new_name):
           file_name = new_name
-          dublicatedName = True
           break
        ii += 1
 
@@ -426,8 +424,7 @@ def saveFile(webFileFilename, pathToSave, webFileContent, webFileResponse, webFi
    fileWasDeleted = False
   
 
-   if dublicatedName:
-      fileWasDeleted = searchfordumpsSpecific(file_name,fileName ,filetype, pathtoSearch)
+   fileWasDeleted = searchfordumpsSpecific(file_name,fileName ,filetype, pathtoSearch)
 
 
    if fileWasDeleted == False:
