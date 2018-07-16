@@ -1195,6 +1195,7 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0, forbidre
           #header without script tags
           moodlePageHeader = PageSoup.find("head")
           [s.decompose() for s in moodlePageHeader('script')]
+          [s.decompose() for s in moodlePageHeader('link')]
 
 
           #only main page
