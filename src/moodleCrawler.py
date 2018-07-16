@@ -51,6 +51,11 @@ loglevel = 5
 useColors = "false"
 config_path = 'config.ini'
 
+
+progressmessagelength = 0
+
+
+
 #Import Libs if needed
 try:
    from bs4 import BeautifulSoup
@@ -159,10 +164,18 @@ def progress(count, total, suffix=''):
 
     percents = round(100.0 * count / float(total), 1)
     bar = '=' * filled_len + '-' * (bar_len - filled_len)
+    
+    progressmessage = '[%s] %s%% ...%s\r' % (bar, percents, suffix)
+    global progressmessagelength
+    progressmessagelength = len(progressmessage)
 
-    sys.stdout.write('[%s] %s%% ...%s\r' % (bar, percents, suffix))
+    sys.stdout.write(progressmessage)
     sys.stdout.flush()
 
+def clearprogress():
+    progressclearmessage = ''.ljust(progressmessagelength) + "\r"
+    sys.stdout.write(progressclearmessage)
+    sys.stdout.flush()
 
 def checkConf(cat, name):
   global conf
@@ -362,9 +375,11 @@ def donwloadFile(downloadFileResponse):
        else: 
           progress(bytes_so_far, total_size, "%d/%dB %0.2fMB/s\r" % (bytes_so_far, total_size, MBbytespersec))
    
-   if header:  
-      print ""
-          
+   #if header:  
+   #   print ""
+
+   clearprogress()
+ 
    log("Download complete.", 4)
    return downloadFileContent
 
