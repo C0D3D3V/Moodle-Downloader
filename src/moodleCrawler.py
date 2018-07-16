@@ -1198,6 +1198,10 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0, forbidre
             if aBad.has_attr('id'):
               if aBad['id'].startswith("action_link"):
                   del aBad['id']
+          
+          for dirtyTag in page_links_Soup.findAll(id=re.compile("^id_")):
+             del dirtyTag['id']
+
 
           [s.decompose() for s in page_links_Soup.select(".questionflagpostdata")]
           
