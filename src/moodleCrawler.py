@@ -1354,9 +1354,10 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0, forbidre
          #remove in every moodle page the action modules
     
     if pageIsHtml == True:  
+         PageSoupHash = BeautifulSoup(PageLinkContent, "lxml") 
          #remove common changing text 
-         [s.decompose() for s in page_links_Soup.select(".overdue")] 
-         submissiontr = page_links_Soup.select(".submissionsummarytable tr")
+         [s.decompose() for s in PageSoupHash.select(".overdue")] 
+         submissiontr = PageSoupHash.select(".submissionsummarytable tr")
          if len(submissiontr) > 2:
             submissiontr[-3].decompose() 
          
