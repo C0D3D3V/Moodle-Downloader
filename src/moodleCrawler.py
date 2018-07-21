@@ -1126,7 +1126,10 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0, forbidre
     realurl = responsePageLink.geturl()
     if isexternlink == False and not domainMoodle in realurl:
        log("This is an special external link.", 2)
-              
+       if usehistory == "true" and realurl in logFile:     
+            log("This link was crawled in the past. I will not recrawl it, change the settings if you want to recrawl it.", 3)
+            return
+
        logExternalLink(realurl, pagename, parentDir)
        
        isSpecialExternLink = True
@@ -1350,7 +1353,7 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0, forbidre
     
          #remove in every moodle page the action modules
     
-        
+    if pageIsHtml == True:  
          #remove common changing text 
          [s.decompose() for s in page_links_Soup.select(".overdue")] 
          submissiontr = page_links_Soup.select(".submissionsummarytable tr")
