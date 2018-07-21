@@ -946,7 +946,7 @@ def logExternalLink(extlink, extname, extLinkDir):
     while True:
         if not os.path.isfile(new_name):
             file_name = new_name
-            log('I will store it in the "file://' + file_name + '" file.', 4)
+            log('I will store the external link ' + extlink + ' in "file://' + file_name + '".', 0)
             externalLinkWriter = io.open(file_name, 'ab')
             if os.name == "nt":
                 externalLinkWriter.write(""""[InternetShortcut]
@@ -1121,6 +1121,20 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0, forbidre
        log("Connection lost! Page does not exist!", 2)
        log("Exception details: " + str(e), 5)
        return
+   
+    isSpecialExternLink = False
+    realurl = responsePageLink.geturl()
+    if isexternlink == False and not domainMoodle in realurl:
+       log("This is an special external link.", 2)
+              
+       logExternalLink(realurl, pagename, parentDir)
+       
+       isSpecialExternLink = True
+       if downloadExternals == "false":
+          log("Ups this is an external link. I do not crawl external links. Change the settings if you want to crawl external links.", 3)
+          return
+
+
      
     #get the filename
     pageFileName = ""
@@ -1343,7 +1357,7 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0, forbidre
          if len(submissiontr) > 2:
             submissiontr[-3].decompose() 
          
-         textofhtml = text_from_html(str(page_links_Soup));
+         textofhtml = text_from_html(str(PageLinkContent));
          #print(textofhtml);
          
          m = md5.new()
@@ -1423,7 +1437,7 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0, forbidre
 
   
     # add Link to crawler history
-    if isexternlink == True or pageIsHtml == False or doAddToHistory == True: 
+    if isexternlink == True or pageIsHtml == False or doAddToHistory == True or isSpecialExternLink == True: 
        addFileToLog(pagelink, pageFilePath)
 
 
