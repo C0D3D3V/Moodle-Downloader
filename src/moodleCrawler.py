@@ -59,6 +59,7 @@ progressmessagelength = 0
 #Import Libs if needed
 try:
    from bs4 import BeautifulSoup
+   from bs4.element import Comment
 except Exception as e:
    print("Module BeautifulSoup4 is missing!")
    exit(1)
@@ -479,6 +480,20 @@ def simpleMoodleCheck(moodlePage):
 
 
 
+def tag_visible(element):
+    if element.parent.name in ['style', 'script', 'head', 'title', 'meta', '[document]']:
+        return False
+    if isinstance(element, Comment):
+        return False
+    return True
+
+
+def text_from_html(body):
+    soup = BeautifulSoup(body, 'html.parser')
+    texts = soup.findAll(text=True)
+    visible_texts = filter(tag_visible, texts)  
+    return u" ".join(t.strip() for t in visible_texts)
+
 
 #status:
 # 0 - Not logged in
@@ -615,7 +630,7 @@ def findOwnCourses(myCoursesURL):
    #regexCourseName = re.compile('class="course_title">(.*?)</div>')
    #course_list = regexCourseName.findall(str(CoursesContentsList))
    courses = []
-   
+       
    #blockCourse = True
    
    for course_string in courseNameList:
@@ -645,7 +660,7 @@ def findOwnCourses(myCoursesURL):
 
 
        courses.append([course_name, course_link])
-       log("Found Course: '" + course_name + "'", 1)
+       log("Found Course: '" + course_name + "'", 2)
 
 
    if len(courses) == 0:
@@ -760,7 +775,7 @@ def searchfordumpsSpecific(filepath, fileName, filetype, pathtoSearch):
         if len(d) > 1:
           for f in d:
               if f == filepath:
-                log('Found correct dump - filepath: "file://' + f + '"', 1)
+                log('Found correct dump - filepath: "file://' + f + '"', 4)
                 foundfilepath = True
                 foundDupes = d    
 
@@ -774,9 +789,9 @@ def searchfordumpsSpecific(filepath, fileName, filetype, pathtoSearch):
 
     #delete only searched tupple
     if not foundDupes is None: 
-        log('Original is %s' % foundDupes[0], 1)
+        log('Original is %s' % foundDupes[0], 4)
         for f in foundDupes[1:]:
-            log('Deleting %s' % f, 1)
+            log('Deleting %s' % f, 4)
             os.remove(f) 
 
     return foundfilepath
@@ -853,11 +868,11 @@ def searchfordumps(pathtoSearch):
 
     i = 0
     for d in dupes:
-        log('Original is %s' % d[0], 1)
+        log('Original is %s' % d[0], 4)
         for f in d[1:]:
             i = i + 1
             if deleteduplicates == "true":
-               log('Deleting %s' % f, 1)
+               log('Deleting %s' % f, 4)
                os.remove(f) 
             if informationaboutduplicates == "true":
                logDuplicates(f, d[0])
@@ -1187,7 +1202,9 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0, forbidre
        if not page_links_Soup is None: 
           #build up own moodle page
 
+          
           [s.decompose() for s in page_links_Soup.select("input[name=sesskey]")]
+          
           #inputTags = page_links_Soup.select('input')
           #for inputB in inputTags:
           #    if inputB.has_attr('sesskey'):
@@ -1203,15 +1220,54 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0, forbidre
              del dirtyTag['id']
 
 
-          [s.decompose() for s in page_links_Soup.select(".questionflagpostdata")]
           
+          [s.decompose() for s in page_links_Soup.select(".questionflag")]
+          [s.decompose() for s in page_links_Soup.select(".questionflagpostdata")]
+
           #fix broken html ... remove navigation
           [s.decompose() for s in page_links_Soup.select("aside")]
 
           #header without script tags
           moodlePageHeader = PageSoup.find("head")
           [s.decompose() for s in moodlePageHeader('script')]
-          [s.decompose() for s in moodlePageHeader('link')]
+
+          #[s.decompose() for s in moodlePageHeader('link')]
+          
+          stylesheetpattern = re.compile("^(.*)/styles.php/(.*)/\d*/(.*)$")
+          faviconpattern = re.compile("^(.*)/image.php/(.*)/\d*/(.*)$")
+          favicon2pattern = re.compile("^(.*)/pluginfile.php/(.*)/\d*/(.*)$")
+            
+          for s in moodlePageHeader.select('link'):
+              m = stylesheetpattern.match(s['href'])
+              if m != None:
+                s['href'] = (m.group(1) + "/styles.php/" + m.group(2) + "/42/" + m.group(3))
+                continue
+              m = faviconpattern.match(s['href'])
+              if m != None:
+                s['href'] = (m.group(1) + "/image.php/" + m.group(2) + "/42/" + m.group(3)) 
+                continue
+              m = favicon2pattern.match(s['href'])
+              if m != None:
+                s['href'] = (m.group(1) + "/pluginfile.php/" + m.group(2) + "/42/" + m.group(3)) 
+                continue
+        
+
+          for s in page_links_Soup.select('img'):
+              m = stylesheetpattern.match(s['src'])
+              if m != None:
+                s['src'] = ( m.group(1) + "/styles.php/" + m.group(2) + "/42/" + m.group(3))
+                continue
+              m = faviconpattern.match(s['src'])
+              if m != None:
+                s['src'] = (m.group(1) + "/image.php/" + m.group(2) + "/42/" + m.group(3))
+                continue 
+              m = favicon2pattern.match(s['src'])
+              if m != None:
+                s['src'] = (m.group(1) + "/pluginfile.php/" + m.group(2) + "/42/" + m.group(3)) 
+                continue
+        
+ 
+
 
 
           #only main page
