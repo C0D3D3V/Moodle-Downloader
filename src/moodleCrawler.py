@@ -462,6 +462,17 @@ def addFileToLog(pageLink, filePath):
 
 
 
+def addHashToLog(pageDir, calcHash):
+   logFileWriter = io.open(crawlHistoryFile, 'ab')
+   logFileWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " "+ pageDir + " calculated hash " + calcHash + "\n")
+   logFileWriter.close()
+   global logFile
+   logFileReader = io.open(crawlHistoryFile, 'rb')
+   logFile = logFileReader.read()
+   logFileReader.close()
+
+
+
 #moodlePage is Content not Soup
 def simpleLoginCheck(moodlePage): 
  # print moodlePage
@@ -489,7 +500,7 @@ def tag_visible(element):
 
 
 def text_from_html(body):
-    soup = BeautifulSoup(body, 'html.parser')
+    soup = BeautifulSoup(body, 'lxml')
     texts = soup.findAll(text=True)
     visible_texts = filter(tag_visible, texts)  
     return u" ".join(t.strip() for t in visible_texts)
@@ -679,10 +690,10 @@ def searchfordumpsSpecific(filepath, fileName, filetype, pathtoSearch):
       #fileName = fileBeginn.split(os.sep)[-1]
       #pathtoSearch = fileBeginn[:(len(fileBeginn) - len(fileName))]
 
+
     filesBySizeSpe = {}
     log('Scanning directory "' + pathtoSearch + '" (file: "file://' + filepath + '", filename: "' + fileName + '", filetype: "' + filetype +'")....' , 5)
     
-
     if not os.path.isfile(filepath):
         log('Error: "file://' + filepath + '" is not a file.') 
         return False
@@ -1283,6 +1294,7 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0, forbidre
           pageFoundLinks = len(page_links)
           isaMoodlePage = True 
 
+          
 
 
     #do some filters for moodle pages
@@ -1324,9 +1336,25 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0, forbidre
     
          #remove in every moodle page the action modules
     
-   
-
-
+        
+         #remove common changing text 
+         [s.decompose() for s in page_links_Soup.select(".overdue")] 
+         submissiontr = page_links_Soup.select(".submissionsummarytable tr")
+         if len(submissiontr) > 2:
+            submissiontr[-3].decompose() 
+         
+         textofhtml = text_from_html(str(page_links_Soup));
+         #print(textofhtml);
+         
+         m = md5.new()
+         m.update(textofhtml)
+         calcHash = m.hexdigest()
+        
+         if usehistory == "true" and  (pageDir + " calculated hash " + calcHash) in logFile:
+            log("This page was saved in the past. I will not resave it, change the recrawl settings if you want to resave it.", 3)
+            doSave = False
+         else:
+            addHashToLog(pageDir, calcHash)
 
 
 
