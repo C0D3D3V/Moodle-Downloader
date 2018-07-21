@@ -59,6 +59,7 @@ progressmessagelength = 0
 #Import Libs if needed
 try:
    from bs4 import BeautifulSoup
+   from bs4.element import Comment
 except Exception as e:
    print("Module BeautifulSoup4 is missing!")
    exit(1)
@@ -461,6 +462,17 @@ def addFileToLog(pageLink, filePath):
 
 
 
+def addHashToLog(pageDir, calcHash):
+   logFileWriter = io.open(crawlHistoryFile, 'ab')
+   logFileWriter.write(datetime.now().strftime('%d.%m.%Y %H:%M:%S') + " "+ pageDir + " calculated hash " + calcHash + "\n")
+   logFileWriter.close()
+   global logFile
+   logFileReader = io.open(crawlHistoryFile, 'rb')
+   logFile = logFileReader.read()
+   logFileReader.close()
+
+
+
 #moodlePage is Content not Soup
 def simpleLoginCheck(moodlePage): 
  # print moodlePage
@@ -478,6 +490,20 @@ def simpleMoodleCheck(moodlePage):
     return False
 
 
+
+def tag_visible(element):
+    if element.parent.name in ['style', 'script', 'head', 'title', 'meta', '[document]']:
+        return False
+    if isinstance(element, Comment):
+        return False
+    return True
+
+
+def text_from_html(body):
+    soup = BeautifulSoup(body, 'lxml')
+    texts = soup.findAll(text=True)
+    visible_texts = filter(tag_visible, texts)  
+    return u" ".join(t.strip() for t in visible_texts)
 
 
 #status:
@@ -615,7 +641,7 @@ def findOwnCourses(myCoursesURL):
    #regexCourseName = re.compile('class="course_title">(.*?)</div>')
    #course_list = regexCourseName.findall(str(CoursesContentsList))
    courses = []
-   
+       
    #blockCourse = True
    
    for course_string in courseNameList:
@@ -645,7 +671,7 @@ def findOwnCourses(myCoursesURL):
 
 
        courses.append([course_name, course_link])
-       log("Found Course: '" + course_name + "'", 1)
+       log("Found Course: '" + course_name + "'", 2)
 
 
    if len(courses) == 0:
@@ -664,10 +690,10 @@ def searchfordumpsSpecific(filepath, fileName, filetype, pathtoSearch):
       #fileName = fileBeginn.split(os.sep)[-1]
       #pathtoSearch = fileBeginn[:(len(fileBeginn) - len(fileName))]
 
+
     filesBySizeSpe = {}
     log('Scanning directory "' + pathtoSearch + '" (file: "file://' + filepath + '", filename: "' + fileName + '", filetype: "' + filetype +'")....' , 5)
     
-
     if not os.path.isfile(filepath):
         log('Error: "file://' + filepath + '" is not a file.') 
         return False
@@ -760,7 +786,7 @@ def searchfordumpsSpecific(filepath, fileName, filetype, pathtoSearch):
         if len(d) > 1:
           for f in d:
               if f == filepath:
-                log('Found correct dump - filepath: "file://' + f + '"', 1)
+                log('Found correct dump - filepath: "file://' + f + '"', 4)
                 foundfilepath = True
                 foundDupes = d    
 
@@ -774,9 +800,9 @@ def searchfordumpsSpecific(filepath, fileName, filetype, pathtoSearch):
 
     #delete only searched tupple
     if not foundDupes is None: 
-        log('Original is %s' % foundDupes[0], 1)
+        log('Original is %s' % foundDupes[0], 4)
         for f in foundDupes[1:]:
-            log('Deleting %s' % f, 1)
+            log('Deleting %s' % f, 4)
             os.remove(f) 
 
     return foundfilepath
@@ -853,11 +879,11 @@ def searchfordumps(pathtoSearch):
 
     i = 0
     for d in dupes:
-        log('Original is %s' % d[0], 1)
+        log('Original is %s' % d[0], 4)
         for f in d[1:]:
             i = i + 1
             if deleteduplicates == "true":
-               log('Deleting %s' % f, 1)
+               log('Deleting %s' % f, 4)
                os.remove(f) 
             if informationaboutduplicates == "true":
                logDuplicates(f, d[0])
@@ -920,7 +946,7 @@ def logExternalLink(extlink, extname, extLinkDir):
     while True:
         if not os.path.isfile(new_name):
             file_name = new_name
-            log('I will store it in the "file://' + file_name + '" file.', 4)
+            log('I will store the external link ' + extlink + ' in "file://' + file_name + '".', 0)
             externalLinkWriter = io.open(file_name, 'ab')
             if os.name == "nt":
                 externalLinkWriter.write(""""[InternetShortcut]
@@ -1095,6 +1121,23 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0, forbidre
        log("Connection lost! Page does not exist!", 2)
        log("Exception details: " + str(e), 5)
        return
+   
+    isSpecialExternLink = False
+    realurl = responsePageLink.geturl()
+    if isexternlink == False and not domainMoodle in realurl:
+       log("This is an special external link.", 2)
+       if usehistory == "true" and realurl in logFile:     
+            log("This link was crawled in the past. I will not recrawl it, change the settings if you want to recrawl it.", 3)
+            return
+
+       logExternalLink(realurl, pagename, parentDir)
+       
+       isSpecialExternLink = True
+       if downloadExternals == "false":
+          log("Ups this is an external link. I do not crawl external links. Change the settings if you want to crawl external links.", 3)
+          return
+
+
      
     #get the filename
     pageFileName = ""
@@ -1187,7 +1230,9 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0, forbidre
        if not page_links_Soup is None: 
           #build up own moodle page
 
+          
           [s.decompose() for s in page_links_Soup.select("input[name=sesskey]")]
+          
           #inputTags = page_links_Soup.select('input')
           #for inputB in inputTags:
           #    if inputB.has_attr('sesskey'):
@@ -1203,15 +1248,54 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0, forbidre
              del dirtyTag['id']
 
 
-          [s.decompose() for s in page_links_Soup.select(".questionflagpostdata")]
           
+          [s.decompose() for s in page_links_Soup.select(".questionflag")]
+          [s.decompose() for s in page_links_Soup.select(".questionflagpostdata")]
+
           #fix broken html ... remove navigation
           [s.decompose() for s in page_links_Soup.select("aside")]
 
           #header without script tags
           moodlePageHeader = PageSoup.find("head")
           [s.decompose() for s in moodlePageHeader('script')]
-          [s.decompose() for s in moodlePageHeader('link')]
+
+          #[s.decompose() for s in moodlePageHeader('link')]
+          
+          stylesheetpattern = re.compile("^(.*)/styles.php/(.*)/\d*/(.*)$")
+          faviconpattern = re.compile("^(.*)/image.php/(.*)/\d*/(.*)$")
+          favicon2pattern = re.compile("^(.*)/pluginfile.php/(.*)/\d*/(.*)$")
+            
+          for s in moodlePageHeader.select('link'):
+              m = stylesheetpattern.match(s['href'])
+              if m != None:
+                s['href'] = (m.group(1) + "/styles.php/" + m.group(2) + "/42/" + m.group(3))
+                continue
+              m = faviconpattern.match(s['href'])
+              if m != None:
+                s['href'] = (m.group(1) + "/image.php/" + m.group(2) + "/42/" + m.group(3)) 
+                continue
+              m = favicon2pattern.match(s['href'])
+              if m != None:
+                s['href'] = (m.group(1) + "/pluginfile.php/" + m.group(2) + "/42/" + m.group(3)) 
+                continue
+        
+
+          for s in page_links_Soup.select('img'):
+              m = stylesheetpattern.match(s['src'])
+              if m != None:
+                s['src'] = ( m.group(1) + "/styles.php/" + m.group(2) + "/42/" + m.group(3))
+                continue
+              m = faviconpattern.match(s['src'])
+              if m != None:
+                s['src'] = (m.group(1) + "/image.php/" + m.group(2) + "/42/" + m.group(3))
+                continue 
+              m = favicon2pattern.match(s['src'])
+              if m != None:
+                s['src'] = (m.group(1) + "/pluginfile.php/" + m.group(2) + "/42/" + m.group(3)) 
+                continue
+        
+ 
+
 
 
           #only main page
@@ -1227,6 +1311,7 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0, forbidre
           pageFoundLinks = len(page_links)
           isaMoodlePage = True 
 
+          
 
 
     #do some filters for moodle pages
@@ -1268,9 +1353,26 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0, forbidre
     
          #remove in every moodle page the action modules
     
-   
-
-
+    if pageIsHtml == True:  
+         PageSoupHash = BeautifulSoup(PageLinkContent, "lxml") 
+         #remove common changing text 
+         [s.decompose() for s in PageSoupHash.select(".overdue")] 
+         submissiontr = PageSoupHash.select(".submissionsummarytable tr")
+         if len(submissiontr) > 2:
+            submissiontr[-3].decompose() 
+         
+         textofhtml = text_from_html(str(PageLinkContent));
+         #print(textofhtml);
+         
+         m = md5.new()
+         m.update(textofhtml)
+         calcHash = m.hexdigest()
+        
+         if usehistory == "true" and  (pageDir + " calculated hash " + calcHash) in logFile:
+            log("This page was saved in the past. I will not resave it, change the recrawl settings if you want to resave it.", 3)
+            doSave = False
+         else:
+            addHashToLog(pageDir, calcHash)
 
 
 
@@ -1339,7 +1441,7 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0, forbidre
 
   
     # add Link to crawler history
-    if isexternlink == True or pageIsHtml == False or doAddToHistory == True: 
+    if isexternlink == True or pageIsHtml == False or doAddToHistory == True or isSpecialExternLink == True: 
        addFileToLog(pagelink, pageFilePath)
 
 
