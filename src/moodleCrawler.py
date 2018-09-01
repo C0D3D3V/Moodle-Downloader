@@ -1105,8 +1105,9 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0, forbidre
     #/groupexchange/ = gruppenwechsel unwichtig?    | skipTotaly
     #/calendar/ = kalender -- rekrusion!! unwicht.  | skipTotaly
     #/glossary/ = wörterbuch -- unwichtig           | skipTotaly
+    #action=delchoice bzw. action= = aktionen -- nicht gut, sollten vom user getätigt werden | skipTotaly 
     if isexternlink == False:
-       if "/user/" in pagelink or  "/badges/" in pagelink or "/blog/" in pagelink or "/feedback/" in pagelink or "/choicegroup/" in pagelink or "/groupexchange/" in pagelink or "/calender/" in pagelink or "/glossary/" in pagelink:
+       if "/user/" in pagelink or  "/badges/" in pagelink or "/blog/" in pagelink or "/feedback/" in pagelink or "/choicegroup/" in pagelink or "/groupexchange/" in pagelink or "/calender/" in pagelink or "/glossary/" in pagelink or "action=" in pagelink:
           log("This is a moodle page. But I will skip it because it is not important.", 4)
           return
 
