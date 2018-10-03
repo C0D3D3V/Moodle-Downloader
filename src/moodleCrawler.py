@@ -1115,6 +1115,20 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0, forbidre
        log("This page will not be crawled because it ends with a file extension given in option 'dontcrawl'.", 3)
        return
     
+    
+    #stop recrusion
+    forbidrecrusionforNew = forbidrecrusionfor[:]
+    if not pagelink == calledFrom and pagelink.split('?')[0] == calledFrom.split('?')[0]: 
+       log("Changing paramter detected! Recrusion posible!", 3)
+       if antirecrusion == "true":
+          if pagelink.split('?')[0] in forbidrecrusionfor:
+            log("Stopping recrusion! If you do missing files, set the option 'antirecrusion' to 'false'.", 1)
+            visitedPages.remove(pagelink)
+            #TODO: add pagelink to a recrawl recruive list... 
+            return
+          else:
+            forbidrecrusionforNew.append(pagelink.split('?')[0])
+     
     #try to get a response from link
     try:
        responsePageLink = urllib2.urlopen(pagelink, timeout=10)
@@ -1163,19 +1177,7 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0, forbidre
        pageFileName = pagename + ".html"
 
 
-    #stop recrusion
-    forbidrecrusionforNew = forbidrecrusionfor[:]
-    if not pagelink == calledFrom and pagelink.split('?')[0] == calledFrom.split('?')[0]: 
-       log("Changing paramter detected! Recrusion posible!", 3)
-       if antirecrusion == "true":
-          if pagelink.split('?')[0] in forbidrecrusionfor:
-            log("Stopping recrusion! If you do missing files, set the option 'antirecrusion' to 'false'.", 1)
-            visitedPages.remove(pagelink)
-            #TODO: add pagelink to a recrawl recruive list... 
-            return
-          else:
-            forbidrecrusionforNew.append(pagelink.split('?')[0])
-    
+ 
 
     PageLinkContent = donwloadFile(responsePageLink)
     
