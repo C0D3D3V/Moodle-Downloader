@@ -637,7 +637,7 @@ def findOwnCourses(myCoursesURL):
       exit(1)
       
    #courseNameList = CoursesContentsList.find_all(class_="course_title")
-   courseNameList = CoursesContentsList.select(".coursebox, .course-info-container:not(.card-box)")
+   courseNameList = CoursesContentsList.select(".coursebox, .course-info-container")
    
    #regexCourseName = re.compile('class="course_title">(.*?)</div>')
    #course_list = regexCourseName.findall(str(CoursesContentsList))
@@ -670,6 +670,9 @@ def findOwnCourses(myCoursesURL):
           log("Course" + course_name +" will not be crawled because the course id is given in option 'dontcrawlcourses'.", 3)
           continue
 
+       if([course_name, course_link] in courses):
+          log("Course" + course_name +" is dublicated.", 3)
+          continue
 
        courses.append([course_name, course_link])
        log("Found Course: '" + course_name + "'", 2)
