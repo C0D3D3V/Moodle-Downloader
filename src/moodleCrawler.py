@@ -51,7 +51,7 @@ Notify.init("Moodle Crawler")
 loglevel = 5
 useColors = "false"
 config_path = 'config.ini'
-
+exitapp = False
 
 progressmessagelength = 0
 
@@ -997,6 +997,11 @@ Name[en_US]=""" + extname)
 #try to crawl all links on a moodle page. And runs rekursive this funktion on it
 def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0, forbidrecrusionfor=[]):
 
+
+    if exitapp:
+       log("Keyboardinterrupt!", 4) 
+       return
+
     if calledFrom is None or calledFrom == "":
        log("Something went wrong! CalledFrom is empty!", 2) 
        calledFrom = ""
@@ -1727,11 +1732,20 @@ for course in courses:
     threads.append([thread, course])
     #crawlMoodlePage(course[1], course[0], current_dir, mainpageURL + "my/")
  
-for thread in threads:
-   thread[0].join()
-   if findduplicates == "true":
-      searchfordumps(normPath(current_dir + "/" + thread[1][0] + "/"))
-   log("Finished course: '" + thread[1][0] + "'")
+try:
+  while len(threads) > 0:
+
+    for thread in threads:
+       thread[0].join(timeout=1)
+       if thread[0].isAlive():
+         if  findduplicates == "true":
+            searchfordumps(normPath(current_dir + "/" + thread[1][0] + "/"))
+         log("Finished course: '" + thread[1][0] + "'")
+         threads.remove(thread)
+
+
+except KeyboardInterrupt:
+  exitapp = True
 
 
 
