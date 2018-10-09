@@ -1722,14 +1722,32 @@ courses = findOwnCourses(mainpageURL)
 #couse loop
 current_dir = normPath(addSlashIfNeeded(root_directory))
 
+threads = []
 
 for course in courses:
+
     log("Check course: '" + course[0] + "'")
-    crawlMoodlePage(course[1], course[0], current_dir, mainpageURL + "my/")
-    if  findduplicates == "true":
-            searchfordumps(normPath(current_dir + "/" + course[0] + "/"))
-    log("Finished course: '" + course[0] + "'")
+    thread = Thread(target = crawlMoodlePage, args = (course[1], course[0], current_dir, mainpageURL + "my/"))
+    thread.start()
+    threads.append([thread, course])
+    #crawlMoodlePage(course[1], course[0], current_dir, mainpageURL + "my/")
  
+try:
+  while len(threads) > 0:
+
+    for thread in threads:
+       thread[0].join(timeout=1)
+       if thread[0].isAlive():
+         if  findduplicates == "true":
+            searchfordumps(normPath(current_dir + "/" + thread[1][0] + "/"))
+         log("Finished course: '" + thread[1][0] + "'")
+         threads.remove(thread)
+
+
+except KeyboardInterrupt:
+  exitapp = True
+  log("Please wait until all threads are shut down....")
+
 
 
 if findallduplicates == "true":
