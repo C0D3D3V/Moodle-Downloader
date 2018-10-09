@@ -1746,6 +1746,7 @@ try:
 
 except KeyboardInterrupt:
   exitapp = True
+  log("Please wait until all threads are shut down....")
 
 
 
