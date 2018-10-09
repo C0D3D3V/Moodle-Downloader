@@ -38,7 +38,8 @@ import datetime as dt
 from datetime import datetime
 from ConfigParser import ConfigParser
 from urlparse import urlparse
-
+from threading import Thread
+from time import sleep
 
 import gi
 gi.require_version('Notify', '0.7') 
@@ -1713,12 +1714,22 @@ courses = findOwnCourses(mainpageURL)
 #couse loop
 current_dir = normPath(addSlashIfNeeded(root_directory))
 
+threads = []
+
 for course in courses:
 
     log("Check course: '" + course[0] + "'")
-    crawlMoodlePage(course[1], course[0], current_dir, mainpageURL + "my/")
-    if findduplicates == "true":
-       searchfordumps(normPath(current_dir + "/" + course[0] + "/"))
+    thread = Thread(target = crawlMoodlePage, args = (course[1], course[0], current_dir, mainpageURL + "my/"))
+    thread.start()
+    threads.append([thread, course])
+    #crawlMoodlePage(course[1], course[0], current_dir, mainpageURL + "my/")
+ 
+for thread in threads:
+   thread[0].join()
+   if findduplicates == "true":
+      searchfordumps(normPath(current_dir + "/" + thread[1][0] + "/"))
+   log("Finished course: '" + thread[1][0] + "'")
+
 
 
 if findallduplicates == "true":
