@@ -40,6 +40,7 @@ from ConfigParser import ConfigParser
 from urlparse import urlparse
 from threading import Thread
 from time import sleep
+from urlparse import urlparse, parse_qs
 
 import gi
 gi.require_version('Notify', '0.7') 
@@ -1724,7 +1725,7 @@ current_dir = normPath(addSlashIfNeeded(root_directory))
 
 
 for course in courses:
-    log("Check course: '" + course[0] + "'")
+    log("Check course: '" + course[0] + "' ID: " + parse_qs(urlparse(course[1]).query)['id'][0])
     crawlMoodlePage(course[1], course[0], current_dir, mainpageURL + "my/")
     if  findduplicates == "true":
             searchfordumps(normPath(current_dir + "/" + course[0] + "/"))
