@@ -40,6 +40,7 @@ from ConfigParser import ConfigParser
 from urlparse import urlparse
 from threading import Thread
 from time import sleep
+from urlparse import urlparse, parse_qs
 
 import gi
 gi.require_version('Notify', '0.7') 
@@ -1725,12 +1726,12 @@ current_dir = normPath(addSlashIfNeeded(root_directory))
 threads = []
 
 for course in courses:
-
     log("Check course: '" + course[0] + "'")
     thread = Thread(target = crawlMoodlePage, args = (course[1], course[0], current_dir, mainpageURL + "my/"))
     thread.start()
     threads.append([thread, course])
     #crawlMoodlePage(course[1], course[0], current_dir, mainpageURL + "my/")
+
  
 try:
   while len(threads) > 0:
