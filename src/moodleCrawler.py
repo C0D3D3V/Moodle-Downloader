@@ -1399,7 +1399,10 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0, forbidre
           
           if not section_links is None:
 
-             sectionname = one_section.attrs["aria-label"]
+             sectionname = "Default"
+             if one_section.has_attr('aria-label'):
+                sectionname = one_section.attrs["aria-label"]
+                
              if sectionname is None or sectionname == "":
                 continue
                 
