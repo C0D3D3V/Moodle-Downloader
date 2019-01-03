@@ -9,6 +9,7 @@ baseurl = "https://moodle.someMoodle.de/m/"
 useauthstate = false
 #Example authurl for 'useauthstate = true' (see that there is a 'AuthState' paramter in the url):
 #authurl = https://moodle.dhbw.de/simplesaml/module.php/core/loginuserpass.php?AuthState=_c44b64b8c571072540441a821d1b3b6caa17a05991%3Ahttps%3A%2F%2Fmoodle.dhbw.de%2Fsimplesaml%2Fmodule.php%2Fcore%2Fas_login.php%3FAuthId%3Dmultilogin%26ReturnTo%3Dhttps%253A%252F%252Fmoodle.dhbw.de%252Fauth%252Fsaml%252Findex.php
+uselogintoken = false
 reloginonfile = false
 
 [crawl]

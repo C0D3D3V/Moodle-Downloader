@@ -203,6 +203,7 @@ password = checkConf("auth", "password")
 authentication_url = checkConf("auth", "authurl")  
 base_url = checkConf("auth", "baseurl")  
 useauthstate = checkConf("auth", "useauthstate")  
+uselogintoken = checkConf("auth", "uselogintoken")  
 reLoginOnFile = checkConf("auth", "reloginonfile")  
 
 crawlallcourses = checkConf("crawl", "allcourses")
@@ -245,6 +246,7 @@ checkBool(downloadcoursepages, "downloadcoursepages")
 checkBool(informationaboutduplicates, "informationaboutduplicates")
 checkBool(useColors, "colors")
 checkBool(useauthstate, "useauthstate")
+checkBool(uselogintoken, "uselogintoken")
 checkBool(notifyFound, "notifications")
 checkBool(reLoginOnFile, "reloginonfile")
 checkBool(antirecrusion, "antirecrusion")
@@ -1487,6 +1489,44 @@ payload = {
 
 log("Moodle Crawler started working.")
 
+copiedLoginToken = ""
+
+if uselogintoken == "true":
+   log("Try to copy logintoken!")
+
+   req = urllib2.Request(authentication_url)
+
+   try:
+      responseLogin = urllib2.urlopen(req, timeout=10)
+   except Exception as e:
+      log("Connection lost! It is not possible to connect to login page!")
+      log("Exception details: " + str(e), 5)
+      exit(1)
+
+   LoginContents = donwloadFile(responseLogin)
+  
+   LoginSoup = BeautifulSoup(LoginContents, "lxml") 
+
+   formsLogin = LoginSoup.select("form")
+
+   if(not len(formsLogin) == 1):
+      log("Warning: Found " + str(len(formsLogin)) + " forms!")
+
+   selectForm = formsLogin[0]
+
+   inputLogintoken = selectForm.select('input[name="logintoken"]')
+
+   if inputLogintoken is None or inputLogintoken[0] is None:
+      log("No logintoken detected! Please contect the developer or turn of 'uselogintoken' in settings")
+      exit(1)
+
+   copiedLoginToken = inputLogintoken[0].get('value')
+   log("Logintoken: " + copiedLoginToken)
+
+   
+   
+
+
 
 if useauthstate == "true":
 
@@ -1594,8 +1634,14 @@ if useauthstate == "true":
 
   authentication_url = responseLogin.geturl().split("?")[0]
   log("Authentication url = " + authentication_url, 5)
-      
 
+
+
+# Add the logintoken to the payload
+if uselogintoken == "true":
+   payload["logintoken"] = copiedLoginToken 
+   #log(str(payload))
+   
 
 
 
@@ -1643,6 +1689,7 @@ if "errorcode=" in responseLogin.geturl():
 LoginSoup = BeautifulSoup(LoginContents, "lxml") 
 
 if not simpleLoginCheck(LoginContents):
+  #log(str(LoginContents))
   log("Cannot connect to moodle or Moodle has changed. Crawler is not logged in. Check your login data.") 
   # log("Full page: " + str(LoginStatusConntent[-1]), 5)
   exit(1)
