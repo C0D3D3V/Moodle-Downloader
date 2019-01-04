@@ -42,11 +42,7 @@ from threading import Thread
 from time import sleep
 from urlparse import urlparse, parse_qs
 
-import gi
-gi.require_version('Notify', '0.7') 
-from gi.repository import Notify
 
-Notify.init("Moodle Crawler")
 
 #logvariable
 loglevel = 5
@@ -275,6 +271,12 @@ if useColors == "true":
    # use Colorama to make Termcolor work on Windows too
    init()
 
+if notifyFound == "true":
+   import gi
+   gi.require_version('Notify', '0.7') 
+   from gi.repository import Notify
+
+   Notify.init("Moodle Crawler")
 
 
 #Setup Dump Search    
