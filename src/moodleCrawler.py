@@ -32,9 +32,10 @@ import cgi
 import fnmatch
 import datetime as dt
 
+from urlparse import urlparse, parse_qs
 from datetime import datetime
 from ConfigParser import ConfigParser
-from urlparse import urlparse
+
 
 # logvariable
 loglevel = 5
