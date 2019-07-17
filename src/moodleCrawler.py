@@ -1239,63 +1239,64 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0, forbidre
 
             # header without script tags
             moodlePageHeader = PageSoup.find("head")
-            if moodlePageHeader is None:
-                moodlePageHeader = ""
+            if moodlePageHeader is not None:
 
-            [s.decompose() for s in moodlePageHeader('script')]
+                [s.decompose() for s in moodlePageHeader('script')]
 
-            #[s.decompose() for s in moodlePageHeader('link')]
+                # [s.decompose() for s in moodlePageHeader('link')]
 
-            stylesheetpattern = re.compile("^(.*)/styles.php/(.*)/\d*/(.*)$")
-            faviconpattern = re.compile("^(.*)/image.php/(.*)/\d*/(.*)$")
-            favicon2pattern = re.compile("^(.*)/pluginfile.php/(.*)/\d*/(.*)$")
+                stylesheetpattern = re.compile(
+                    "^(.*)/styles.php/(.*)/\d*/(.*)$")
+                faviconpattern = re.compile("^(.*)/image.php/(.*)/\d*/(.*)$")
+                favicon2pattern = re.compile(
+                    "^(.*)/pluginfile.php/(.*)/\d*/(.*)$")
 
-            for s in moodlePageHeader.select('link'):
-                m = stylesheetpattern.match(s['href'])
-                if m != None:
-                    s['href'] = (m.group(1) + "/styles.php/" +
-                                 m.group(2) + "/42/" + m.group(3))
-                    continue
-                m = faviconpattern.match(s['href'])
-                if m != None:
-                    s['href'] = (m.group(1) + "/image.php/" +
-                                 m.group(2) + "/42/" + m.group(3))
-                    continue
-                m = favicon2pattern.match(s['href'])
-                if m != None:
-                    s['href'] = (m.group(1) + "/pluginfile.php/" +
-                                 m.group(2) + "/42/" + m.group(3))
-                    continue
+                for s in moodlePageHeader.select('link'):
+                    m = stylesheetpattern.match(s['href'])
+                    if m != None:
+                        s['href'] = (m.group(1) + "/styles.php/" +
+                                     m.group(2) + "/42/" + m.group(3))
+                        continue
+                    m = faviconpattern.match(s['href'])
+                    if m != None:
+                        s['href'] = (m.group(1) + "/image.php/" +
+                                     m.group(2) + "/42/" + m.group(3))
+                        continue
+                    m = favicon2pattern.match(s['href'])
+                    if m != None:
+                        s['href'] = (m.group(1) + "/pluginfile.php/" +
+                                     m.group(2) + "/42/" + m.group(3))
+                        continue
 
-            for s in page_links_Soup.select('img'):
-                m = stylesheetpattern.match(s['src'])
-                if m != None:
-                    s['src'] = (m.group(1) + "/styles.php/" +
-                                m.group(2) + "/42/" + m.group(3))
-                    continue
-                m = faviconpattern.match(s['src'])
-                if m != None:
-                    s['src'] = (m.group(1) + "/image.php/" +
-                                m.group(2) + "/42/" + m.group(3))
-                    continue
-                m = favicon2pattern.match(s['src'])
-                if m != None:
-                    s['src'] = (m.group(1) + "/pluginfile.php/" +
-                                m.group(2) + "/42/" + m.group(3))
-                    continue
+                for s in page_links_Soup.select('img'):
+                    m = stylesheetpattern.match(s['src'])
+                    if m != None:
+                        s['src'] = (m.group(1) + "/styles.php/" +
+                                    m.group(2) + "/42/" + m.group(3))
+                        continue
+                    m = faviconpattern.match(s['src'])
+                    if m != None:
+                        s['src'] = (m.group(1) + "/image.php/" +
+                                    m.group(2) + "/42/" + m.group(3))
+                        continue
+                    m = favicon2pattern.match(s['src'])
+                    if m != None:
+                        s['src'] = (m.group(1) + "/pluginfile.php/" +
+                                    m.group(2) + "/42/" + m.group(3))
+                        continue
 
-            # only main page
-            PageLinkContent = "<!DOCTYPE html> <html>" + \
-                str(moodlePageHeader) + "<body class='format-topics path-mod path-mod-assign safari dir-ltr lang-de yui-skin-sam yui3-skin-sam  pagelayout-incourse category-246 has-region-side-pre used-region-side-pre has-region-side-post empty-region-side-post side-pre-only jsenabled'>" + str(page_links_Soup) + "</body></html>"
+                # only main page
+                PageLinkContent = "<!DOCTYPE html> <html>" + \
+                    str(moodlePageHeader) + "<body class='format-topics path-mod path-mod-assign safari dir-ltr lang-de yui-skin-sam yui3-skin-sam  pagelayout-incourse category-246 has-region-side-pre used-region-side-pre has-region-side-post empty-region-side-post side-pre-only jsenabled'>" + str(page_links_Soup) + "</body></html>"
 
-            if "/course/view.php" in pagelink:
-                course_section = page_links_Soup.select(
-                    '.section.main.clearfix')
+                if "/course/view.php" in pagelink:
+                    course_section = page_links_Soup.select(
+                        '.section.main.clearfix')
 
-            page_links = page_links_Soup.find_all('a')
+                page_links = page_links_Soup.find_all('a')
 
-            pageFoundLinks = len(page_links)
-            isaMoodlePage = True
+                pageFoundLinks = len(page_links)
+                isaMoodlePage = True
 
     # do some filters for moodle pages
     pageSaveDir = parentDir
