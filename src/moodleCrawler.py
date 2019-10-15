@@ -652,9 +652,8 @@ def findOwnCourses(myCoursesURL):
             log("Full page: " + str(course_string), 5)
             continue
 
-        ignore = aCourse[0].find('span.sr-only')
-        if ignore is not None:
-            ignore.extract()
+        # ignore hidden text
+        [s.decompose() for s in aCourse[0].select("span.sr-only")]
 
         course_name = decodeFilename(aCourse[0].text).strip("-")
 
