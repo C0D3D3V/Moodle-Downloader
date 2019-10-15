@@ -644,13 +644,17 @@ def findOwnCourses(myCoursesURL):
     for course_string in courseNameList:
             #aCourse = course_string.find('a')
         aCourse = course_string.select(
-            "h4:nth-of-type(1) a, h3:nth-of-type(1) a, h2:nth-of-type(1) a")
+            "h4:nth-of-type(1) a, h3:nth-of-type(1) a, h2:nth-of-type(1) a, a.coursename")
         #course_name = aCourse.text.encode('ascii', 'ignore').replace('/', '|').replace('\\', '|').replace(' ', '_').replace('.', '_')
 
         if aCourse is None or len(aCourse) == 0:
             log("No link to this course was found!", 3)
             log("Full page: " + str(course_string), 5)
             continue
+
+        ignore = aCourse[0].find('span.sr-only')
+        if ignore is not None:
+            ignore.extract()
 
         course_name = decodeFilename(aCourse[0].text).strip("-")
 
