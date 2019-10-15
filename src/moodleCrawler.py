@@ -701,7 +701,7 @@ def searchfordumpsSpecific(filepath, fileName, filetype, pathtoSearch):
     coresize = os.stat(filepath)[stat.ST_SIZE]
 
     fnames = fnmatch.filter(os.listdir(pathtoSearch),
-                            fileName + '*' + filetype)
+                            re.escape(fileName) + '*' + re.escape(filetype))
 
     for f in fnames:
         f = pathtoSearch + f
