@@ -29,7 +29,6 @@ import stat
 import md5
 import re
 import cgi
-import fnmatch
 import datetime as dt
 
 from urlparse import urlparse, parse_qs
@@ -400,7 +399,7 @@ def saveFile(webFileFilename, pathToSave, webFileContent, webFileResponse, webFi
     if file_name[-4:] == ".php":
         file_name = file_name[:len(file_name) - 4] + ".html"
 
-    #file_name = urllib.unquote(url).decode('utf8')
+    # file_name = urllib.unquote(url).decode('utf8')
 
     if not os.path.isdir(pathToSave):
         os.makedirs(pathToSave)
@@ -509,8 +508,8 @@ def text_from_html(body):
 
 def checkLoginStatus(pageContent):
     PageSoup = BeautifulSoup(pageContent, "lxml")
-    #LoginStatusConntent = PageSoup.find(class_="logininfo")
-    #LoginStatusConntent = PageSoup.select(".logininfo")
+    # LoginStatusConntent = PageSoup.find(class_="logininfo")
+    # LoginStatusConntent = PageSoup.select(".logininfo")
 
     # if not LoginStatusConntent is None or len(LoginStatusConntent) == 0:
 
@@ -535,8 +534,8 @@ def checkLoginStatus(pageContent):
 
         # Lookup in the Moodle source if it is standard   ("Logout" on every Page)
         LoginSoup = BeautifulSoup(LoginContents, "lxml")
-        #LoginStatusConntent = LoginSoup.find(class_="logininfo")
-        #LoginStatusConntent = PageSoup.select(".logininfo")
+        # LoginStatusConntent = LoginSoup.find(class_="logininfo")
+        # LoginStatusConntent = PageSoup.select(".logininfo")
 
         # if LoginStatusConntent is None or ("Logout" not in str(LoginStatusConntent[-1]) and "logout" not in str(LoginStatusConntent[-1])):
         if not simpleLoginCheck(LoginContents):
@@ -623,7 +622,7 @@ def findOwnCourses(myCoursesURL):
 
     CoursesContentsList = CoursesContentsSoup.find(id="region-main")
 
-    #CoursesContentsList = CoursesContents.split('class="block_course_list  block list_block"')[1].split('class="footer"')[0]
+    # CoursesContentsList = CoursesContents.split('class="block_course_list  block list_block"')[1].split('class="footer"')[0]
     # >Meine Kurse</h2>
 
     if CoursesContentsList is None:
@@ -631,21 +630,21 @@ def findOwnCourses(myCoursesURL):
         log("Full page: " + str(CoursesContents), 5)
         exit(1)
 
-    #courseNameList = CoursesContentsList.find_all(class_="course_title")
+    # courseNameList = CoursesContentsList.find_all(class_="course_title")
     courseNameList = CoursesContentsList.select(
         ".coursebox, .course-info-container")
 
-    #regexCourseName = re.compile('class="course_title">(.*?)</div>')
-    #course_list = regexCourseName.findall(str(CoursesContentsList))
+    # regexCourseName = re.compile('class="course_title">(.*?)</div>')
+    # course_list = regexCourseName.findall(str(CoursesContentsList))
     courses = []
 
-    #blockCourse = True
+    # blockCourse = True
 
     for course_string in courseNameList:
-            #aCourse = course_string.find('a')
+            # aCourse = course_string.find('a')
         aCourse = course_string.select(
             "h4:nth-of-type(1) a, h3:nth-of-type(1) a, h2:nth-of-type(1) a, a.coursename")
-        #course_name = aCourse.text.encode('ascii', 'ignore').replace('/', '|').replace('\\', '|').replace(' ', '_').replace('.', '_')
+        # course_name = aCourse.text.encode('ascii', 'ignore').replace('/', '|').replace('\\', '|').replace(' ', '_').replace('.', '_')
 
         if aCourse is None or len(aCourse) == 0:
             log("No link to this course was found!", 3)
@@ -688,10 +687,10 @@ def findOwnCourses(myCoursesURL):
 
 def searchfordumpsSpecific(filepath, fileName, filetype, pathtoSearch):
     # find dublication in folder pathtoSearch with specific filename and filetype without subfolders
-        #filetype = "." + filepath.split('.')[-1]
-        #fileBeginn = filepath[:(len(filepath) - len(filetype))]
-        #fileName = fileBeginn.split(os.sep)[-1]
-        #pathtoSearch = fileBeginn[:(len(fileBeginn) - len(fileName))]
+        # filetype = "." + filepath.split('.')[-1]
+        # fileBeginn = filepath[:(len(filepath) - len(filetype))]
+        # fileName = fileBeginn.split(os.sep)[-1]
+        # pathtoSearch = fileBeginn[:(len(fileBeginn) - len(fileName))]
 
     filesBySizeSpe = {}
     log('Scanning directory "' + pathtoSearch + '" (file: "file://' + filepath +
@@ -703,10 +702,13 @@ def searchfordumpsSpecific(filepath, fileName, filetype, pathtoSearch):
 
     coresize = os.stat(filepath)[stat.ST_SIZE]
 
-    fnames = fnmatch.filter(os.listdir(pathtoSearch),
-                            re.escape(fileName) + '*' + re.escape(filetype))
+    fnames = os.listdir(pathtoSearch)
+    fileFilter = re.compile(re.escape(fileName) + '.*' + re.escape(filetype))
 
     for f in fnames:
+        if not fileFilter.match(f):
+            continue
+
         f = pathtoSearch + f
 
         if not os.path.isfile(f):
@@ -1044,7 +1046,7 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0, forbidre
             log("This is an bad link. I will not crawl it. It tries to kid me.", 3)
             return
         else:
-            #pagelink = calledFrom[:(len(calledFrom) - len(calledFrom.split('/')[-1])) - 1] + pagelink
+            # pagelink = calledFrom[:(len(calledFrom) - len(calledFrom.split('/')[-1])) - 1] + pagelink
             pagelink = calledFrom[:len(
                 calledFrom) - len(calledFrom.split('/')[-1])] + pagelink
 
@@ -1220,7 +1222,7 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0, forbidre
 
             [s.decompose() for s in page_links_Soup.select("input[name=sesskey]")]
 
-            #inputTags = page_links_Soup.select('input')
+            # inputTags = page_links_Soup.select('input')
             # for inputB in inputTags:
             #    if inputB.has_attr('sesskey'):
             #        inputB['sesskey'] = ''
@@ -1322,7 +1324,7 @@ def crawlMoodlePage(pagelink, pagename, parentDir, calledFrom, depth=0, forbidre
 # /quiz/ = hausaufgaben wichtig ?                | saveInPagedir      ??maybe do not save
 
     if isaMoodlePage:
-            #saveIt in pageDir
+            # saveIt in pageDir
         if "/course/view.php" in pagelink or "/wiki/" in pagelink or "/quiz/" in pagelink:
             pageSaveDir = pageDir
 
@@ -1548,7 +1550,7 @@ if useauthstate == "true":
         else:
             pagelink = calledFrom[:len(
                 calledFrom) - len(calledFrom.split('/')[-1])] + pagelink
-            #pagelink = calledFrom[:(len(calledFrom) - len(calledFrom.split('/')[-1])) - 1] + pagelink
+            # pagelink = calledFrom[:(len(calledFrom) - len(calledFrom.split('/')[-1])) - 1] + pagelink
 
     actionLink = pagelink
 
@@ -1602,10 +1604,10 @@ log("Try to login...", 2)
 # Log the credentials
 # log("+++++++++ Login Credentials - Remove these lines from the log file +++++++++, 3)
 # log("These lines are only for check purposes, 3)
-#log("Authentication url: '" + authentication_url + "'", 3)
-#log("Username: '" + username + "'", 3)
-#log("Password: '" + password + "'", 3)
-#log("Root directory: '" + root_directory + "'", 3)
+# log("Authentication url: '" + authentication_url + "'", 3)
+# log("Username: '" + username + "'", 3)
+# log("Password: '" + password + "'", 3)
+# log("Root directory: '" + root_directory + "'", 3)
 # log("+++++++++ End Login Credentials +++++++++, 3)
 
 
@@ -1646,8 +1648,8 @@ mainpageURL = addSlashIfNeeded(base_url)
 # Lookup in the Moodle source if it is standard (Domain + subfolder)
 # mainpageURL = responseLogin.geturl()  #get mainURL from login response (this is not normal)
 
-#parsed_uri = urlparse(mainpageURL)
-#domainMoodle = '{uri.scheme}://{uri.netloc}/'.format(uri=parsed_uri)
+# parsed_uri = urlparse(mainpageURL)
+# domainMoodle = '{uri.scheme}://{uri.netloc}/'.format(uri=parsed_uri)
 domainMoodle = mainpageURL
 
 #
