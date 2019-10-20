@@ -632,7 +632,7 @@ def findOwnCourses(myCoursesURL):
 
     # courseNameList = CoursesContentsList.find_all(class_="course_title")
     courseNameList = CoursesContentsList.select(
-        ".coursebox, .course-info-container")
+        ".coursebox, .course-info-container, a.coursname")
 
     # regexCourseName = re.compile('class="course_title">(.*?)</div>')
     # course_list = regexCourseName.findall(str(CoursesContentsList))
