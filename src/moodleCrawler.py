@@ -213,6 +213,7 @@ maxdepth = checkConf("crawl", "maxdepth")
 dontcrawl = checkConf("crawl", "dontcrawl")
 onlycrawlcourses = checkConf("crawl", "onlycrawlcourses")
 dontcrawlcourses = checkConf("crawl", "dontcrawlcourses")
+extracrawlcourses = checkConf("crawl", "extracrawlcourses")
 antirecrusion = checkConf("crawl", "antirecrusion")
 
 useColors = checkConf("other", "colors")
@@ -246,6 +247,8 @@ maxdepth = checkInt(maxdepth, "maxdepth")
 
 listOnlyCrawlCourses = onlycrawlcourses.split(",")
 listDontCrawlCourses = dontcrawlcourses.split(",")
+listExtraCrawlCourses = extracrawlcourses.split(",")
+
 listDontCrawl = dontcrawl.split(",")
 
 # add colors
@@ -602,7 +605,7 @@ def dontCrawlCoursesCheck(url):
 # try to crawl all courses from moodlepage/my/
 
 
-def findOwnCourses(myCoursesURL):
+def findOwnCourses(myCoursesURL, extraCourses):
     log("Searching Courses...", 2)
 
     # Lookup in the Moodle source if it is standard (moodlePath/my/ are my courses)
@@ -636,7 +639,7 @@ def findOwnCourses(myCoursesURL):
 
     # regexCourseName = re.compile('class="course_title">(.*?)</div>')
     # course_list = regexCourseName.findall(str(CoursesContentsList))
-    courses = []
+    courses = extraCourses
 
     # blockCourse = True
 
@@ -671,8 +674,14 @@ def findOwnCourses(myCoursesURL):
                 " will not be crawled because the course id is given in option 'dontcrawlcourses'.", 3)
             continue
 
-        if([course_name, course_link] in courses):
-            log("Course" + course_name + " is dublicated.", 3)
+        duplicate = False
+        for course in courses:
+            if course_link in course[1]:
+                duplicate = True
+                break
+
+        if duplicate or [course_name, course_link] in courses:
+            log("Course " + course_name + " is duplicated.", 3)
             continue
 
         courses.append([course_name, course_link])
@@ -1663,7 +1672,7 @@ if not os.path.isdir(root_directory):
 
     # create crealHistoryfile
 if not os.path.isfile(crawlHistoryFile):
-    logFileWriter = open(crawlHistoryFile, 'ab')
+    logFileWriter = open(crawlqHistoryFile, 'ab')
     logFileWriter.write("LogFile:V1.0")
     logFileWriter.close()
 
@@ -1697,8 +1706,15 @@ if logfileOld:
     logFile = logFileReader.read()
     logFileReader.close()
 
+
 # find own courses (returns an array)
-courses = findOwnCourses(mainpageURL)
+extraCourses = []
+for extraCourse in listExtraCrawlCourses:
+    course = extraCourse.split(":")
+    extraCourses.append(
+        [course[1], mainpageURL + "course/view.php?id=" + course[0]])
+
+courses = findOwnCourses(mainpageURL, extraCourses)
 
 
 # couse loop

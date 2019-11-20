@@ -33,6 +33,7 @@ Set the following in the file `config.ini` before running the script
 - `notifications` [Boolean] : If you want to get notified if new files were found
 - `onlycrawlcourses` [List] : A list of course IDs, that should only be crawled. It creates a subset of courses that were found in the dashboard (option `allcourses` creates the superset). If the list is empty no courses will be ignored.
 - `dontcrawlcourses` [List] : A list of course IDs, that should not be crawled. It creates a subset of courses that were found in the dashboard (option `allcourses` creates the superset). If the list is empty no courses will be ignored.
+- `extracrawlcourses` [List] : A list of course IDs, that should be crawled additionally to the automaticly detected ones. If the list is empty no courses will be additionally crawled. Scheme: `"<course-id>:<course-name>,<next course-id>:<next course-name>,..."`. See the example configuration for an example.
 - `antirecrusion` [Boolean] : Default this prevent recrusive crawling of the same page. If you do missing files try to set this to `false`
 
 All the files are stored in their respective directories inside the `root_dir` with the names as in moodle.
