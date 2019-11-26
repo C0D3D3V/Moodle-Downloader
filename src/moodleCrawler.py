@@ -1683,7 +1683,7 @@ if not os.path.isdir(root_directory):
 
     # create crealHistoryfile
 if not os.path.isfile(crawlHistoryFile):
-    logFileWriter = open(crawlqHistoryFile, 'ab')
+    logFileWriter = open(crawlHistoryFile, 'ab')
     logFileWriter.write("LogFile:V1.0")
     logFileWriter.close()
 
