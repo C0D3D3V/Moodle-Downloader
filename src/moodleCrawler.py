@@ -1711,8 +1711,9 @@ if logfileOld:
 extraCourses = []
 for extraCourse in listExtraCrawlCourses:
     course = extraCourse.split(":")
-    extraCourses.append(
-        [course[1], mainpageURL + "course/view.php?id=" + course[0]])
+    if len(course) == 2:
+        extraCourses.append(
+            [course[1], mainpageURL + "course/view.php?id=" + course[0]])
 
 courses = findOwnCourses(mainpageURL, extraCourses)
 
