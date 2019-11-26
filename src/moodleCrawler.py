@@ -195,7 +195,6 @@ password = checkConf("auth", "password")
 authentication_url = checkConf("auth", "authurl")
 base_url = checkConf("auth", "baseurl")
 useauthstate = checkConf("auth", "useauthstate")
-uselogintoken = checkConf("auth", "uselogintoken")
 reLoginOnFile = checkConf("auth", "reloginonfile")
 
 crawlallcourses = checkConf("crawl", "allcourses")
@@ -237,7 +236,6 @@ checkBool(downloadcoursepages, "downloadcoursepages")
 checkBool(informationaboutduplicates, "informationaboutduplicates")
 checkBool(useColors, "colors")
 checkBool(useauthstate, "useauthstate")
-checkBool(uselogintoken, "uselogintoken")
 checkBool(notifyFound, "notifications")
 checkBool(reLoginOnFile, "reloginonfile")
 checkBool(antirecrusion, "antirecrusion")
@@ -1460,37 +1458,50 @@ log("Moodle Crawler started working.")
 
 copiedLoginToken = ""
 
-if uselogintoken == "true":
-    log("Try to copy logintoken!")
 
-    req = urllib2.Request(authentication_url)
+log("Try to copy logintoken!")
 
-    try:
-        responseLogin = urllib2.urlopen(req, timeout=10)
-    except Exception as e:
-        log("Connection lost! It is not possible to connect to login page!")
-        log("Exception details: " + str(e), 5)
-        exit(1)
+req = urllib2.Request(authentication_url)
 
-    LoginContents = donwloadFile(responseLogin)
+try:
+    responseLogin = urllib2.urlopen(req, timeout=10)
+except Exception as e:
+    log("Connection lost! It is not possible to connect to login page!")
+    log("Exception details: " + str(e), 5)
+    exit(1)
 
-    LoginSoup = BeautifulSoup(LoginContents, "lxml")
+LoginContents = donwloadFile(responseLogin)
 
-    formsLogin = LoginSoup.select("form")
+LoginSoup = BeautifulSoup(LoginContents, "lxml")
 
-    if(not len(formsLogin) == 1):
-        log("Warning: Found " + str(len(formsLogin)) + " forms!")
+formsLogin = LoginSoup.select("form")
 
-    selectForm = formsLogin[0]
+if(not len(formsLogin) == 1):
+    log("Warning: Found " + str(len(formsLogin)) + " forms!")
+
+for selectForm in formsLogin:
+
+    inputs = ""
+    first = True
+    for input_elm in selectForm.select('input'):
+        if first:
+            if input_elm.get('name') is not None:
+                inputs += input_elm.get('name')
+                first = False
+        else:
+            if input_elm.get('name') is not None:
+                inputs += ", " + input_elm.get('name')
+
+    log("Form inputs: %s" % (inputs), 5)
 
     inputLogintoken = selectForm.select('input[name="logintoken"]')
 
-    if inputLogintoken is None or inputLogintoken[0] is None:
-        log("No logintoken detected! Please contect the developer or turn of 'uselogintoken' in settings")
-        exit(1)
+    if inputLogintoken is None or len(inputLogintoken) <= 0 or inputLogintoken[0] is None:
+        continue
 
     copiedLoginToken = inputLogintoken[0].get('value')
     log("Logintoken: " + copiedLoginToken)
+    break
 
 
 if useauthstate == "true":
@@ -1596,7 +1607,7 @@ if useauthstate == "true":
 
 
 # Add the logintoken to the payload
-if uselogintoken == "true":
+if copiedLoginToken != "":
     payload["logintoken"] = copiedLoginToken
     # log(str(payload))
 
