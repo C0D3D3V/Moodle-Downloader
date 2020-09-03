@@ -1,5 +1,5 @@
 
-### This project is no longer being actively developed. 
+### This project is no longer being actively developed. ([Jump to the new version](https://github.com/C0D3D3V/Moodle-Downloader-2))
 
 Since about version 3.4 of Moodle, this downloader may not be able to reconstruct a correct folder structure. However, depending on the settings of Moodle, the downlowder may still work fully, so it is worth testing the downloader. 
 You can check the version of your Moodle at https://your.moodle.de/lib/upgrade.txt Adapting the downloader to the new versions would require a major restructuring. So I have decided to take a completely different approach and rewrite the downloader from scratch.  
